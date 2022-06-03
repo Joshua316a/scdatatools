@@ -3,7 +3,10 @@ import typing
 
 from scdatatools.forge.dftypes import GUID, Record
 
-from functools import partial
+
+if typing.TYPE_CHECKING:
+    from scdatatools.forge import DataCoreBinary
+
 
 RECORD_HANDLER = {}
 
@@ -51,15 +54,17 @@ class DataCoreObject:
     automagically use the correct subclass for the :class:`Record` type.
     """
 
-    def __init__(self, datacore, guid_or_dco: typing.Union[str, GUID, Record]):
+    def __init__(self, datacore: "DataCoreBinary", guid_or_dco: typing.Union[str, GUID, Record]):
         self.record = (
-            guid_or_dco if isinstance(guid_or_dco, Record) else str(guid_or_dco)
+            guid_or_dco if isinstance(guid_or_dco, Record) else datacore.records_by_guid[str(guid_or_dco)]
         )
         self._datacore = datacore
 
     @property
     def guid(self):
-        return self.record.id.value
+        if hasattr(self.record, 'id'):
+            return self.record.id.value
+        return self.record.value
 
     @property
     def name(self):
