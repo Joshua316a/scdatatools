@@ -14,9 +14,9 @@ with open("HISTORY.rst") as history_file:
 requirements = [
     "fnvhash~=0.1.0",
     "hexdump~=3.3",
-    "humanize~=3.13.1",
-    "numpy~=1.21.5",
-    "packaging~=21.3",
+    "humanize~=4.11.0",
+    "numpy~=2.1",
+    "packaging~=24.1",
     "pycryptodome~=3.12.0",
     "pyquaternion~=0.9.9",
     "pyrsi~=0.1.19",
@@ -24,8 +24,8 @@ requirements = [
     "rich~=13.3.5",
     "sentry-sdk==1.5.8",
     "tqdm~=4.62.3",
-    "xxhash~=2.0.2",
-    "zstandard~=0.12.0",
+    "xxhash~=3.5.0",
+    "zstandard~=0.23.0",
 ]
 
 setup_requirements = []
