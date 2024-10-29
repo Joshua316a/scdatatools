@@ -369,7 +369,7 @@ class MTLLoader:
             pass
         try:
             shadergroup.inputs["BlendLayer2Glossiness"].default_value = (
-                    float(mtl_attrs["PublicParams"].get("BlendLayer2Glossiness", 1)) / 255
+                    mtl_attrs["PublicParams"].get("BlendLayer2Glossiness", 1)/255
             )
         except:
             pass
@@ -420,11 +420,11 @@ class MTLLoader:
 
         if "_tint_" in matname.lower() and self.tint_palette_node_group:
             tint_output = 0
-            if "primary" in matname.lower():
+            if "primary" or "_blacks" in matname.lower():
                 tint_output = 2
-            elif "secondary" in matname.lower():
+            elif "secondary" or "_base_" in matname.lower():
                 tint_output = 5
-            elif "tertiary" in matname.lower():
+            elif "tertiary" or "_accents" in matname.lower():
                 tint_output = 8        
             if tint_output != 0:
                 tint_group = nodes.new("ShaderNodeGroup")
@@ -553,10 +553,10 @@ class MTLLoader:
 
             # newbasegroup.node_tree.label = submat.get("Name")
             newbasegroup.inputs["tint diff Color"].default_value = make_tuple(
-                submat.get("TintColor",".001,.001,.001") + ",1"
+                submat.get("TintColor","0,0,0") + ",1"
             )
             newbasegroup.inputs["tint spec Color"].default_value = make_tuple(
-                submat.get("TintColor",".001,.001,.001") + ",1"
+                submat.get("TintColor","0,0,0") + ",1"
             )
             newbasegroup.inputs["tint gloss"].default_value = make_tuple(
                 submat.get("GlossMult", 1)
@@ -865,7 +865,7 @@ class MTLLoader:
         # mat['filename'] = mtl_path.as_posix()
 
         mat.nodes["Tint"].inputs["diff Color"].default_value = getsRGBColor(
-            mtl_attrs.get("Diffuse", "1,1,1") + ",1"
+            mtl_attrs.get("Diffuse", "0,0,0") + ",1"
         )
         mat.nodes["Tint"].inputs["spec Color"].default_value = getsRGBColor(
             mtl_attrs.get("Specular", "0,0,0") + ",1"
@@ -1116,7 +1116,7 @@ class MTLLoader:
                 logger.warning(f"missing texture for mat %s: %s", mat.name, filename)
                 continue
 
-            if "diff" in img.name:
+            if "diff" in img.name and "blend" not in img.name:
                 img.colorspace_settings.name = "sRGB"
             else:
                 img.colorspace_settings.name = "Non-Color"                
@@ -1139,9 +1139,9 @@ class MTLLoader:
             # Set interpolation
             texnode.interpolation = 'Smart'
 
-            if list(tex) or tex.get("Map") == "TexSlot7":
+            if list(tex) or tex.get("Map") == "TexSlot6":
                 mapnode = nodes.new(type="ShaderNodeMapping")
-                if tex.get("Map") == "TexSlot7" or "_detail." or "_udm." in img.name.lower():
+                if tex.get("Map") == "TexSlot6":
                     mapnode.vector_type = 'POINT'    
                 else:                    
                     mapnode.vector_type = 'TEXTURE'
