@@ -98,6 +98,7 @@ class P4KExtFile(zipfile.ZipExtFile):
         # TODO: the CRCs don't match, but im getting the same outputs as unp4k - we should figure out what exactly is
         #   going into calculating the CRC for P4K entry
         self._expected_crc = None
+        self._orig_crc = None # Needed for new zipfile lib version post Python 3.12?
 
         self._seekable = False
         try:
