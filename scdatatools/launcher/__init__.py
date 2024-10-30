@@ -27,7 +27,7 @@ def get_library_folder(rsilauncher_log_file: typing.Union[Path, str] = None) -> 
         else:
             if rsilauncher_log_file is None: # Oh no :(
                 # Check lug-helper Wine and system Wine paths
-                winedir_conf_path = Path(os.path.expandvars(r"$HOME/.config/winedir.conf"))
+                winedir_conf_path = Path(os.path.expandvars(r"$HOME/.config/starcitizen-lug/winedir.conf"))
                 if winedir_conf_path.is_file(): # lug-helper
                     wine_dir = Path(winedir_conf_path.open("r", encoding="utf-8").read().rstrip())
                 else: # System Wine
@@ -58,7 +58,7 @@ def get_library_folder(rsilauncher_log_file: typing.Union[Path, str] = None) -> 
     else: # No other platforms supported
         return None
 
-    if rsilauncher_log_file.is_file():
+    if rsilauncher_log_file is not None and rsilauncher_log_file.is_file():
             for log in rsilauncher_log_file.open("r", encoding="utf-8", errors="surrogateescape").read().split("},\n{")[::-1]:
                 try:
                     log = '{' + log.strip().strip(',').lstrip('{') + "}"
