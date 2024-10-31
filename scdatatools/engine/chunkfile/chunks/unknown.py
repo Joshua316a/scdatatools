@@ -23,7 +23,7 @@ class UnknownSC12001(Chunk):
 @defs.chunk_handler(defs.ChunkType.UnknownSC13, versions=[0x001])
 class UnknownSC13001(Chunk):
     """
-    e.g. 'Data\Objects\Spaceships\Thrusters\AEGS\AEGS_Gladius_Thrusters\AEGS_Gladius_Thruster_Main.cga'
+    e.g. 'Data/Objects/Spaceships/Thrusters/AEGS/AEGS_Gladius_Thrusters/AEGS_Gladius_Thruster_Main.cga'
     struct ChunkHeader746 {
         type [<enum 'ChunkType'>] = 20480;
         version [c_ushort] = 2;

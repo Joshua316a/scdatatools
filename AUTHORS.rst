@@ -10,4 +10,6 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* th3st0rmtr00p3r <th3st0rmtr00p3r@tkdomain.org>
+* VMXEO
+* Travis Law
