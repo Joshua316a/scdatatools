@@ -6,8 +6,14 @@
 -r ../docs/requirements.txt
 
 # These have been abandoned, with nose just straight up not being supported by unittests anymore
+
+# bumpversion was abandoned then forked into bumpversion2 which was then abandoned and forked into bump-my-version which
+# is active. Will be using that instead
 bumpversion
+
+# There is pynose, but given we have no tests anyways this is up in the air and gives us the ability to move to
+# whatever testing framework we feel like.
 nose
 
-# Still works for distribution, potentially look into supporting?
+# Still works for distribution, however poetry-core has it's own poetry publish command we could use as an alternative.
 twine
