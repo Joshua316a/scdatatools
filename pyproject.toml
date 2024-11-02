@@ -1,13 +1,14 @@
 [tool.poetry]
 name = "scdatatools"
-version = "1.0.3"
+version = "1.0.4"
 description = "Python tools for working with Star Citizen data files."
 repository = "https://gitlab.com/scmodding/frameworks/scdatatools"
 authors = [
     "ventorvar <ventorvar@gmail.com>",
     "th3st0rmtr00p3r <th3st0rmtr00p3r@tkdomain.org>",
     "VMXEO <>",
-    "Travis Law <>",]
+    "Travis Law <>",
+]
 license = "MIT"
 readme = ["README.rst", "HISTORY.rst"]
 keywords= ["scdatatools",]
@@ -26,17 +27,20 @@ python = "^3.10"
 fnvhash = "^0.1.0"
 hexdump = "^3.3"
 humanize = "^4.11.0"
-numpy = "^2.1.2"
+numpy = "2.0"
 packaging = "^24.1"
 pycryptodome = "^3.21.0"
 pyquaternion = "^0.9.9"
-pyrsi = "^0.1.19"
-rich = "^13.9.3"
+rich = "^13.9.4"
 sentry-sdk = "^2.17.0"
 tqdm = "^4.66.6"
 xxhash = "^3.5.0"
 zstandard = "^0.23.0"
-python-nubia = {git = "https://gitlab.com/tmlaw/python-nubia.git"}
+pyrsi = "^0.1.19"
+pynubia = "^0.3.0"
+
+[tool.poetry.group.dev.dependencies]
+bump-my-version = "^0.28.0"
 
 [tool.poetry.group.docs]
 optional = true

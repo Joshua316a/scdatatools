@@ -16,6 +16,7 @@ from pyquaternion import Quaternion
 
 from scdatatools.engine.model_utils import quaternion_to_dict
 
+
 # Pulled from distutils repo given its deprecation in Python 3.12
 def strtobool(val) -> bool:
     """Convert a string representation of truth to true (1) or false (0).
@@ -31,6 +32,7 @@ def strtobool(val) -> bool:
         return False
     else:
         raise ValueError(f"invalid truth value {val!r}")
+
 
 def parse_bool(val) -> bool:
     """Parse a boolean value weather in int, str, or bool"""
