@@ -1,5 +1,6 @@
 import importlib
 import logging
+import os
 import pkgutil
 import typing
 from pathlib import Path
@@ -147,10 +148,14 @@ class PluginManager:
     @classmethod
     def discover_plugins(cls, plugins_dir=None):
         """Dynamically discover and load plugins"""
+        excluded_plugins = [_.casefold() for _ in os.environ.get("SCDT_PLUGINS_EXCLUDE", "").split(",")]
+        logger.debug(
+            f"Discovering plugins (exclude: {excluded_plugins})"
+        )
         discovered_plugins = {
             name: importlib.import_module(name)
             for finder, name, ispkg in pkgutil.iter_modules()
-            if name.startswith(cls.PACKAGE_PREFIX)
+            if name.startswith(cls.PACKAGE_PREFIX) and name.casefold() not in excluded_plugins
         }
         # TODO: also walk/load plugins in the given `plugins_dir`
         return discovered_plugins

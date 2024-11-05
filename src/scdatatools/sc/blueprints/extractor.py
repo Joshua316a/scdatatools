@@ -17,7 +17,6 @@ from scdatatools.engine.textures import (
     tex_convert,
     collect_and_unsplit,
     is_glossmap,
-    ConverterUtility,
 )
 from scdatatools.engine.chunkfile.converter import CGFModelConverter
 from scdatatools.engine.textures.converter import DDSTextureConverter
@@ -56,8 +55,6 @@ def extract_blueprint(
     ww2ogg: str = "",
     revorb: str = "",
     cgf_converter_bin: str = "",
-    tex_converter: ConverterUtility = ConverterUtility.default,
-    tex_converter_bin: str = "",
     monitor=None,
     **kwargs,
 ) -> list:
@@ -88,10 +85,6 @@ def extract_blueprint(
     :param revorb: Override which `revorb` binary used for audio conversion. Will be auto-discovered by default.
     :param cgf_converter_bin: Override which `cgf-converter` binary used for model conversion.
         Will be auto-discovered by default.
-    :param tex_converter: Override which texture converter utility used for texture conversion.
-        Will be auto-discovered by default.
-    :param tex_converter_bin: Override the texture converter executable to use.
-        Will be auto-discovered by default.
     :param monitor: Callable function to output status messages to in addition to logging. See
         `scdatatools.p4k.P4KFile.extractall` for arguments `monitor` should accept
     :return: List of the extracted file paths on disk
@@ -110,8 +103,6 @@ def extract_blueprint(
         if auto_convert_textures:
             converters.append(DDSTextureConverter)
             converter_options.setdefault("ddstexture_converter_fmt", convert_dds_fmt)
-            converter_options.setdefault("ddstexture_converter_converter", tex_converter)
-            converter_options.setdefault("ddstexture_converter_converter_bin", tex_converter_bin)
             converter_options.setdefault("ddstexture_converter_replace", True)
 
         logger.debug(f"{auto_convert_models = }")
