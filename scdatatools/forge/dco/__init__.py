@@ -1,4 +1,6 @@
 from . import components
+from . import tags
+from . import vehicle
 from . import entities
 from . import scitem
 from . import tags

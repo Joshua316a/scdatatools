@@ -1,11 +1,23 @@
+import typing
 import logging
+from math import prod
 from functools import cached_property
 
-from scdatatools.engine.cryxml import dict_from_cryxml_file
+from scdatatools.engine.constants import SCU_SIZE_M3
+from scdatatools.forge.utils import landingpad_size_for_dimensions
+from scdatatools.engine.model_utils import vec3_to_vector, Vector3D
+from scdatatools.engine.cryxml import is_cryxmlb_file, etree_from_cryxml_file, dict_from_cryxml_file
 from scdatatools.utils import generate_free_key
+
 from .common import DataCoreRecordObject, register_record_handler, dco_from_datacore, register_strong_pointer_handler
+from .vehicle import VehicleRole
+from .common import DataCoreObject, register_record_handler, dco_from_guid
+
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from scdatatools.p4k import P4KFile
 
 
 @register_record_handler("EntityClassDefinition")
@@ -45,10 +57,8 @@ class SEntityDefaultLoadoutParams(DataCoreRecordObject):
                         sublo = proc_loadout(sublo.properties.get("entries", []))
                     if ac := self._sc.attachable_component_manager.attachable_components.get(entity):
                         entity = ac
-                        try:
+                        if hasattr(entity, 'set_loadout'):
                             entity.set_loadout(sublo)
-                        except (AttributeError, KeyError):
-                            pass  # entity doesn't support setting a loadout
                     port_name = entry.properties["itemPortName"]
                     lo[port_name] = {'entity': entity, 'loadout': sublo}
                 except Exception as e:
@@ -63,32 +73,41 @@ class SEntityDefaultLoadoutParams(DataCoreRecordObject):
 
 class Vehicle(Entity):
     @property
-    def category(self):
-        return self.object.properties["Category"]
+    def category(self) -> str:
+        return self.record.properties.get("Category", "")
 
     @property
-    def icon(self):
-        return self.object.properties["Icon"]
+    def icon(self) -> str:
+        return self.record.properties.get("Icon", "")
 
     @property
-    def invisible(self):
-        return self.object.properties["Invisible"]
+    def invisible(self) -> bool:
+        return self.record.properties.get("Invisible", False)
 
     @property
-    def bbox_selection(self):
-        return self.object.properties["BBoxSelection"]
+    def bbox_selection(self) -> bool:
+        return self.record.properties.get("BBoxSelection", False)
 
     @property
-    def lifetime_policy(self):
-        return dco_from_datacore(self._datacore, self.object.properties["lifetimePolicy"])
+    def lifetime_policy(self) -> typing.Union[DataCoreObject, None]:
+        try:
+            return dco_from_guid(self._datacore, self.record.properties["lifetimePolicy"])
+        except KeyError:
+            return None
 
     @property
-    def object_containers(self):
-        return self.components["VehicleComponentParams"].objectContainers
+    def object_containers(self) -> typing.Dict[str, object]:
+        try:
+            return self.components["VehicleComponentParams"].properties["objectContainers"]
+        except KeyError:
+            return {}
 
     @property
-    def max_bounding_box_size(self):
-        return self.components["VehicleComponentParams"].maxBoundingBoxSize.properties
+    def max_bounding_box_size(self) -> typing.Union[Vector3D, None]:
+        try:
+            return vec3_to_vector(self.components["VehicleComponentParams"].properties["maxBoundingBoxSize"].properties)
+        except KeyError:
+            return None
 
     @cached_property
     def vehicle_definition(self):
@@ -137,6 +156,89 @@ class Vehicle(Entity):
     filename_match="libs/foundry/records/entities/spaceships/.*",
 )
 class Ship(Vehicle):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._vd = {}
+
+    @cached_property
+    def item_ports(self) -> typing.Dict[str, dict]:
+        ips = {}
+
+        def parse_loadout(parent, loadout):
+            if loadout is None:
+                return
+            for entry in loadout.properties.get('entries', []):
+                parent[entry.properties['itemPortName']] = {
+                    'entity_class_name': entry.properties['entityClassName'],
+                    'inventory_container': entry.properties['inventoryContainer'],
+                    'item_port_name': entry.properties['itemPortName'],
+                    'loadout': {}
+                }
+                parse_loadout(parent[entry.properties['itemPortName']]['loadout'], entry.properties['loadout'])
+
+        parse_loadout(ips, self.components["SEntityComponentDefaultLoadoutParams"].properties['loadout'])
+        return ips
+
+    @property
+    def crew_size(self) -> int:
+        try:
+            return self.components["VehicleComponentParams"].properties['crewSize']
+        except KeyError:
+            return 0
+
+    @property
+    def vehicle_name(self) -> str:
+        return self.components["VehicleComponentParams"].properties.get('vehicleName', '')
+
+    @property
+    def vehicle_role(self) -> typing.Union[VehicleRole, None]:
+        try:
+            return VehicleRole(self._datacore, self.components["VehicleComponentParams"].properties['vehicleRoleRef'])
+        except KeyError:
+            return None
+
+    @property
+    def vehicle_description(self) -> str:
+        return self.components["VehicleComponentParams"].properties.get('vehicleDescription', '')
+
+    @property
+    def vehicle_image_path(self) -> str:
+        return self.components["VehicleComponentParams"].properties.get('vehicleName', '')
+
+    @property
+    def vehicle_career(self):
+        try:
+            return dco_from_guid(self._datacore,
+                                 self.components["VehicleComponentParams"].properties['vehicleCareerRef'].value)
+        except KeyError:
+            return None
+
+    @property
+    def is_gravlev(self) -> bool:
+        return self.components["VehicleComponentParams"].properties['isGravlevVehicle']
+
+    @property
+    def dogfight_enabled(self) -> bool:
+        return self.components["VehicleComponentParams"].properties['dogfightEnabled']
+
+    @cached_property
+    def cargo(self) -> dict:
+        grids = {}
+        total = 0
+        for name, ip in self.item_ports.items():
+            if entity_record := self._datacore.entities.get(ip['entity_class_name']):
+                entity = Entity(self._datacore, entity_record)
+                if "SCItemCargoGridParams" in entity.components:
+                    grids[name] = entity
+                    total += prod(
+                        entity.components["SCItemCargoGridParams"].properties["dimensions"].properties.values()
+                    )
+        return {'scu': total / SCU_SIZE_M3, 'grids': grids}
+
+    @cached_property
+    def landingpad_size(self):
+        return landingpad_size_for_dimensions(self._datacore, **self.max_bounding_box_size)
+
     def __repr__(self):
         return f"<DCO Ship {self.name}>"
 

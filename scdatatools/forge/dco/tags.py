@@ -17,4 +17,7 @@ class Tag(DataCoreRecordObject):
 
     @property
     def children(self):
-        return [Tag(self._datacore, t.name) for t in self.object.properties["children"]]
+        return [Tag(self._datacore, t.name) for t in self.record.properties["children"]]
+
+    def __repr__(self):
+        return f'<Tag name:{self.name} guid:{self.guid}>'

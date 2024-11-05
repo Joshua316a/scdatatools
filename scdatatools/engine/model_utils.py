@@ -3,6 +3,11 @@ import typing
 from pyquaternion import Quaternion
 
 
+if typing.TYPE_CHECKING:
+    from scdatatools.forge.dftypes import StructureInstance
+    from scdatatools.forge.dftypes.utils import AttrDict
+
+
 def quaternion_to_dict(quat: Quaternion) -> typing.Dict[str, float]:
     """Returns a diction representation of a :class:`Quaternion`"""
     return {"x": quat.x, "y": quat.y, "z": quat.z, "w": quat.w}
@@ -150,9 +155,15 @@ def quaternion_from_csv(values: str, order="wxyz") -> Quaternion:
     return Quaternion(**q)
 
 
-def vec3_to_tuple(vec3):
+def vec3_to_tuple(vec3: "AttrDict"):
     vec3 = vec3.properties
     return vec3["x"], vec3["y"], vec3["z"]
+
+
+def vec3_to_vector(vec3: typing.Union["AttrDict", "StructureInstance"]):
+    if isinstance(vec3, dict):
+        return Vector3D(**vec3)
+    return Vector3D(**vec3.properties)
 
 
 def euler_to_quaternion(roll, pitch, yaw):

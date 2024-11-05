@@ -5,6 +5,7 @@ from scdatatools.forge.dftypes import GUID, Record, StrongPointer, StructureInst
 
 if typing.TYPE_CHECKING:
     from scdatatools.sc import StarCitizen
+    from scdatatools.forge import DataCoreBinary
 
 
 RECORD_HANDLER = {}
@@ -114,9 +115,25 @@ class DataCoreRecordObject(DataCoreObject):
     automagically use the correct subclass for the :class:`Record` type.
     """
 
+    def __init__(self, datacore: "DataCoreBinary", guid_or_dco: typing.Union[str, GUID, Record]):
+        self.record = (
+            guid_or_dco if isinstance(guid_or_dco, Record) else datacore.records_by_guid[str(guid_or_dco)]
+        )
+        self._datacore = datacore
+
     @property
     def guid(self):
-        return self.object.id.value
+        if hasattr(self.record, 'id'):
+            return self.record.id.value
+        return self.record.value
+
+    @property
+    def name(self):
+        return self.record.name
+
+    @property
+    def type(self):
+        return self.record.type
 
     @property
     def filename(self):

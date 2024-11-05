@@ -4,6 +4,11 @@ import typing
 from pathlib import Path
 
 from scdatatools.p4k import P4KFile
+from scdatatools.engine.model_utils import vec3_to_vector
+
+
+if typing.TYPE_CHECKING:
+    from scdatatools.forge import DataCoreBinary
 
 
 def read_and_seek(dcb, data_type, buffer=None):
@@ -70,3 +75,26 @@ def geometry_for_record(record, data_root: typing.Union[P4KFile, Path] = None, b
     except (StopIteration, KeyError):
         pass
     return geom
+
+
+def landingpad_size_for_dimensions(dcb: "DataCoreBinary", x, y, z, ground_vehicle=False):
+    if not hasattr(dcb, '_landing_pads'):
+        lprs = []
+        for lp in sorted(
+                dcb.search_filename('libs/foundry/records/landingpadsize/landingpadsize*.xml'),
+                key=lambda r: r.properties['id']):
+            lprs.append({
+                'name': lp.name,
+                'id': lp.properties['id'],
+                'ship_size': vec3_to_vector(lp.properties['shipSize']),
+                'ground_vehicle_size': vec3_to_vector(lp.properties['groundVehicleSize'])
+            })
+        dcb._landing_pads = lprs
+
+    dim = sorted([x, y, z])
+
+    for lp in dcb._landing_pads:
+        size = sorted((lp['ground_vehicle_size'] if ground_vehicle else lp['ship_size']).values())
+        if not any(_ >= size[i] for i, _ in enumerate(dim)):
+            break
+    return lp
