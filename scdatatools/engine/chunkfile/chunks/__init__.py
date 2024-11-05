@@ -27,8 +27,11 @@ def header_class_for_version(chunk_file_version) -> typing.Type[ChunkHeader]:
 
 def chunk_class_from_header(chunk_header: ChunkHeader, fallback=Chunk) -> typing.Type[Chunk]:
     """Returns the appropriate class for the given `chunk_header`"""
-    if chunk_header.type not in ChunkType:
-        raise ValueError(f'Unhandled chunk type {chunk_header}')
+    try:
+        if chunk_header.type not in ChunkType:
+            raise ValueError(f'Unhandled chunk type {chunk_header}')
+    except TypeError:
+        raise TypeError(f'Unhandled chunk header {chunk_header}')
 
     chunk_version_handlers = CHUNK_CLASSES.setdefault(chunk_header.type, {})
     # if chunk_header.version not in chunk_version_handlers:

@@ -36,7 +36,9 @@ class Entity(DataCoreRecordObject):
     @property
     def label(self):
         try:
-            key_label = self.components['SAttachableComponentParams'].properties['AttachDef'].properties['Localization'].properties['Name'][1:]
+            key_label = \
+            self.components['SAttachableComponentParams'].properties['AttachDef'].properties['Localization'].properties[
+                'Name'][1:]
             label = self._sc.localization.gettext(key_label)
             return label
         except:
@@ -121,6 +123,31 @@ class Vehicle(Entity):
             logger.exception(f'Failed to read vehicle definition for {self.object.filename}', exc_info=e)
         return {}
 
+    @property
+    def mass(self) -> float:
+        return float(self.vehicle_definition['Vehicle']['Parts']['Part']['@mass'])
+
+    @property
+    def parts(self):
+        # Make a little cleaner to navigate parts dict
+        p = self.vehicle_definition['Vehicle']['Parts']['Part'].copy()
+        p['parts'] = {}
+
+        def _walk_parts(d, parts):
+            if not isinstance(parts, list):
+                parts = [parts]
+            for p in parts:
+                n = p['@name']
+                d[n] = p.copy()
+                if 'Parts' in p:
+                    del d[n]['Parts']
+                    d[n]['parts'] = {}
+                    _walk_parts(d[n]['parts'], p['Parts']['Part'])
+
+        _walk_parts(p['parts'], p['Parts']['Part'])
+        del p['Parts']
+        return p
+
     @cached_property
     def hardpoints(self):
         hps = {}
@@ -129,12 +156,10 @@ class Vehicle(Entity):
             if isinstance(d, list):
                 for part in d:
                     _walk_parts(part)
-                return
-
-            if 'hardpoint' in (name := d.get('@name', '')) and d.get('@class', '') == 'ItemPort':
-                hps[name] = d
-            if 'Part' in d or 'Parts' in d:
-                return _walk_parts(d['Part'] if 'Part' in d else d['Parts'])
+            else:
+                if 'hardpoint' in (name := d.get('@name', '')).lower() and d.get('@class', '') == 'ItemPort':
+                    hps[name] = d
+                _walk_parts(d.get('Part' if 'Part' in d else 'Parts', []))
 
         _walk_parts(self.vehicle_definition.get('Vehicle', {}).get('Parts', []))
         return hps
@@ -145,10 +170,18 @@ class Vehicle(Entity):
 
     @cached_property
     def default_loadout(self):
-        return {
-            k: v for k, v in self.components['SEntityComponentDefaultLoadoutParams'].loadout.items()
-            if k in self.editable_hardpoints
-        }
+        dl = self.components['SEntityComponentDefaultLoadoutParams'].loadout.copy()
+
+        def _walk_loadout(dl):
+            for v in dl.values():
+                if v.get('entity'):
+                    if e := self._datacore.entities.get(v['entity'], ''):
+                        v['entity'] = dco_from_datacore(self._sc, e)
+                if v.get('loadout', []):
+                    _walk_loadout(v['loadout'])
+
+        _walk_loadout(dl)
+        return dl
 
 
 @register_record_handler(
@@ -242,6 +275,10 @@ class Ship(Vehicle):
     def __repr__(self):
         return f"<DCO Ship {self.name}>"
 
+    @property
+    def scm_speed(self) -> float:
+        return float(self.vehicle_definition['Vehicle']['MovementParams']['Spaceship'][''])
+
 
 @register_record_handler(
     "EntityClassDefinition",
@@ -250,6 +287,7 @@ class Ship(Vehicle):
 class GroundVehicle(Vehicle):
     def __repr__(self):
         return f"<DCO GroundVehicle {self.name}>"
+
 
 @register_record_handler(
     "EntityClassDefinition",
@@ -264,9 +302,10 @@ class Carryable(Entity):
             self.geom_hash = hash(self.geometry_path)
         except:
             self.geometry_path = None
-        
+
     def __repr__(self):
         return f"<DCO Carryable {self.name} '{self.label}'>"
+
 
 @register_record_handler(
     "EntityClassDefinition",
@@ -281,9 +320,10 @@ class Crateable(Carryable):
             self.geom_hash = hash(''.join(self.sub_geometry_path))
         except:
             self.sub_geometry_path = []
-        
+
     def __repr__(self):
         return f"<DCO Crateable {self.name} '{self.label}'>"
+
 
 @register_record_handler(
     "EntityClassDefinition",
@@ -293,6 +333,7 @@ class GimbalMount(Entity):
     def __repr__(self):
         return f"<GimbalMount {self.name}>"
 
+
 @register_record_handler(
     "EntityClassDefinition",
     filename_match="libs/foundry/records/transitsystem/transitcarriage/.*",
@@ -300,3 +341,14 @@ class GimbalMount(Entity):
 class TransitCarriage(Entity):
     def __repr__(self):
         return f"<TransitCarriage {self.name}>"
+
+
+
+@register_record_handler(
+    "EntityClassDefinition",
+    filename_match='libs/foundry/records/entities/scitem/ships/thrusters/*'
+)
+class ShipThruster(Entity):
+    def __repr__(self):
+        return f"<ShipThruster {self.name}>"
+

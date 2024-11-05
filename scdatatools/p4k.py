@@ -683,6 +683,8 @@ class P4KFile(zipfile.ZipFile):
                     raise
 
         for i, info in enumerate(members):
+            if not isinstance(info, P4KInfo):
+                info = self.getinfo(info)
             if ext_path := self._extract_member(info, path, save_to=save_to, overwrite=overwrite):
                 if monitor is not None:
                     monitor(msg=monitor_msg_from_info(info), progress=i, total=total)

@@ -6,6 +6,7 @@ import json
 import mmap
 import sys
 import typing
+from fileinput import filename
 from pathlib import Path
 
 from scdatatools.engine.cryxml.utils import pprint_xml_tree
@@ -13,6 +14,7 @@ from scdatatools.forge import dftypes
 from scdatatools.forge.dftypes.enums import DataTypes
 from scdatatools.forge.utils import read_and_seek
 from scdatatools.utils import dict_to_etree
+from scdatatools.p4k import P4KExtFile, P4KFile
 from .dftypes import Record
 
 
@@ -42,18 +44,22 @@ class DataCoreBinaryMMap(mmap.mmap):
 
 
 class DataCoreBinary:
-    def __init__(self, filename_or_data: typing.Union[str, Path, bytes, bytearray]):
+    def __init__(self, filename_or_data: typing.Union[str, Path, P4KFile, P4KExtFile, bytes, bytearray]):
         if isinstance(filename_or_data, bytes):
             self.raw_data = bytearray(filename_or_data)
         elif isinstance(filename_or_data, bytearray):
             self.raw_data = filename_or_data
+        elif isinstance(filename_or_data, P4KExtFile):
+            self.raw_data = bytearray(filename_or_data.read())
+        elif isinstance(filename_or_data, P4KFile) or isinstance(filename_or_data, Path):
+            self.raw_data = bytearray(filename_or_data.open('rb').read())
         elif isinstance(filename_or_data, str):
             filename = Path(filename_or_data)
             if not filename.is_file():
                 raise ValueError(f"Expected bytes or filename, not: {filename_or_data}")
             self.raw_data = bytearray(filename.open("rb").read())
         else:
-            self.raw_data = bytearray(filename_or_data.read())
+            raise ValueError(f"Expected bytes, file, or filename, not: {filename_or_data}")
 
         self.raw_data = memoryview(self.raw_data)
 
