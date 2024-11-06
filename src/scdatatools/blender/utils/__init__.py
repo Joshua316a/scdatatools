@@ -20,7 +20,9 @@ try:
 except ImportError:
     pass  # not in blender
 
-from . import ui_utils, validation
+from . import ui_utils as ui_utils
+from . import validation as validation
+
 
 logger = logging.getLogger(__name__)
 SUPPORTED_PYTHON_VERSIONS = ">=3.10.2,<3.11"
@@ -52,18 +54,10 @@ def available_blender_installations(
         include_paths.add(Path(shutil.which(blender)).parent)
 
     if sys.platform == "win32":
-        include_paths.update(
-            _.parent
-            for _ in (Path(os.environ["PROGRAMFILES"]) / "Blender Foundation").rglob(blender)
-        )
+        include_paths.update(_.parent for _ in (Path(os.environ["PROGRAMFILES"]) / "Blender Foundation").rglob(blender))
     elif sys.platform == "darwin":
         include_paths.update(
-            chain(
-                *(
-                    [b.parent for b in _.rglob(blender)]
-                    for _ in Path("/Applications").glob("Blender*")
-                )
-            )
+            chain(*([b.parent for b in _.rglob(blender)] for _ in Path("/Applications").glob("Blender*")))
         )
 
     def _fetch_version(blender_path):
@@ -77,11 +71,7 @@ def available_blender_installations(
                 stderr=subprocess.STDOUT,
                 timeout=5,
             )
-            versions = [
-                _.split()
-                for _ in ret.stdout.decode("utf-8").split("\n")
-                if _.startswith("VERCHECK")
-            ]
+            versions = [_.split() for _ in ret.stdout.decode("utf-8").split("\n") if _.startswith("VERCHECK")]
             if versions:
                 compatible = Version(versions[0][1]) in compat_spec
                 if compatible_only and not compatible:
@@ -187,9 +177,7 @@ def remove_sc_physics_proxies() -> bool:
     """Remove `$physics_proxy*` objects typically found in converted Star Citizen models."""
     # remove physics proxies
     try:
-        proxy_objs = [
-            obj for obj in bpy.data.objects if obj.name.lower().startswith("$physics_proxy")
-        ]
+        proxy_objs = [obj for obj in bpy.data.objects if obj.name.lower().startswith("$physics_proxy")]
         for obj in track(proxy_objs, description="Removing SC physics proxy objects"):
             bpy.data.objects.remove(obj, do_unlink=True)
         return True
@@ -209,19 +197,13 @@ def import_cleanup(context, option_offsetdecals=False):
                 if not slot.material:
                     # empty slot
                     continue
-                verts = [
-                    v for f in obj.data.polygons if f.material_index == index for v in f.vertices
-                ]
+                verts = [v for f in obj.data.polygons if f.material_index == index for v in f.vertices]
                 if len(verts):
                     vg = obj.vertex_groups.get(slot.material.name)
                     if vg is None:
                         vg = obj.vertex_groups.new(name=slot.material.name)
                     vg.add(verts, 1.0, "ADD")
-                if (
-                    ("pom" in slot.material.name)
-                    or ("decal" in slot.material.name)
-                    and option_offsetdecals
-                ):
+                if ("pom" in slot.material.name) or ("decal" in slot.material.name) and option_offsetdecals:
                     mod_name = slot.material.name + " tweak"
                     if not obj.modifiers.get(mod_name):
                         obj.modifiers.new(mod_name, "DISPLACE")
@@ -232,7 +214,7 @@ def import_cleanup(context, option_offsetdecals=False):
             if not obj.modifiers.get("Weld"):
                 obj.modifiers.new("Weld", "WELD")
                 obj.modifiers["Weld"].merge_threshold = 0
-            
+
             if not obj.modifiers.get("Weighted Normal"):
                 obj.modifiers.new("Weighted Normal", "WEIGHTED_NORMAL")
                 obj.modifiers["Weighted Normal"].keep_sharp = True
@@ -260,9 +242,7 @@ def copy_rotation(from_obj, to_obj):
     if to_obj.rotation_mode == "QUATERNION":
         to_obj.rotation_quaternion = from_obj.matrix_basis.to_3x3().to_quaternion()
     elif to_obj.rotation_mode == "AXIS_ANGLE":
-        rot = (
-            from_obj.matrix_basis.to_3x3().to_quaternion().to_axis_angle()
-        )  # returns (Vector((x, y, z)), w)
+        rot = from_obj.matrix_basis.to_3x3().to_quaternion().to_axis_angle()  # returns (Vector((x, y, z)), w)
         axis_angle = rot[1], rot[0][0], rot[0][1], rot[0][2]  # convert to w, x, y, z
         to_obj.rotation_axis_angle = axis_angle
     else:
@@ -371,7 +351,7 @@ def compare_armature(armatureA, armatureB) -> bool:
         bonesBNames.append(boneB.name)
 
     for boneA in bonesA:
-        if boneA.name in bonesBNames == False:
+        if boneA.name not in bonesBNames:
             return False
 
     return True

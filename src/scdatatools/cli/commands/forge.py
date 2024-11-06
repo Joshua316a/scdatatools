@@ -148,7 +148,7 @@ class forge:
             print(f"Extracting first match for filters '{','.join(filters)}' to {output}")
             print("=" * 120)
             if not records:
-                sys.stderr.write(f"No files found for filter")
+                sys.stderr.write("No files found for filter")
                 sys.exit(2)
             _dump_record(dcb, next(iter(records.values())), output, guid, guid_if_exists, not json)
         else:
@@ -162,9 +162,7 @@ class forge:
                 else:
                     output = Path(output)
                     output.mkdir(parents=True, exist_ok=True)
-                    for record in track(
-                        records.values(), description="Extracting records", unit="records"
-                    ):
+                    for record in track(records.values(), description="Extracting records", unit="records"):
                         _dump_record(dcb, record, output, guid, guid_if_exists, not json)
             except KeyboardInterrupt:
                 pass

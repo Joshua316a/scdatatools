@@ -1,7 +1,5 @@
-import logging
 from pathlib import Path
 
-from scdatatools.p4k import compressor_names
 
 
 RECORDS_BASE_PATH = Path("libs/foundry/records/")

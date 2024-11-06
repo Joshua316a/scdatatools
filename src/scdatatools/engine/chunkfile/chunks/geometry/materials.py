@@ -14,9 +14,7 @@ class MtlNameType(IntEnum):
     MwoChild = (0x02,)
     Single = (0x10,)
     Child = (0x12,)
-    Unknown1 = (
-        0x0B,
-    )  # Collision materials?  In MWO, these are the torsos, arms, legs from body/<mech>.mtl
+    Unknown1 = (0x0B,)  # Collision materials?  In MWO, these are the torsos, arms, legs from body/<mech>.mtl
     Unknown2 = 0x04
 
 
@@ -26,15 +24,11 @@ class MtlNamePhysicsType(IntEnum):
     DEFAULT = (0x00000000,)
     NOCOLLIDE = (0x00000001,)
     OBSTRUCT = (0x00000002,)
-    DEFAULTPROXY = (
-        0x000000FF,
-    )  # this needs to be checked.  cgf.xml says 256; not sure if hex or dec
+    DEFAULTPROXY = (0x000000FF,)  # this needs to be checked.  cgf.xml says 256; not sure if hex or dec
     UNKNOWN = (0x00001100,)  # collision mesh?
     UNKNOWN1 = 0x1000  # found in 'data/objects/spaceships/ships/aegs/javelin/interior/set_tec/tec_ceiling_fan.cgf'
     UNKNOWN2 = 0x1001  # found in javelin.cga
-    UNKNOWN3 = (
-        0x1002  # found in Data\Objects\planet\flora\tree\dendrosenecio\dendrosenecio_b_lod4.cgf
-    )
+    UNKNOWN3 = 0x1002  # found in Data\Objects\planet\flora\tree\dendrosenecio\dendrosenecio_b_lod4.cgf
 
 
 class MtlName:
@@ -79,9 +73,7 @@ class MtlName802(MtlName, Chunk):
         self.sub_material_physics_types = []
         for _ in range(self.num_sub_materials):
             try:
-                self.sub_material_physics_types.append(
-                    MtlNamePhysicsType(self.chunk_data.unpack("i"))
-                )
+                self.sub_material_physics_types.append(MtlNamePhysicsType(self.chunk_data.unpack("i")))
             except ValueError as e:
                 logger.error(f"{e}")
                 self.sub_material_physics_types.append(MtlNamePhysicsType.INVALID)
@@ -109,6 +101,4 @@ class MaterialName900(MtlName, Chunk900):
         self.name = data.decode("utf-8").strip("\x00")
 
     def __repr__(self):
-        return (
-            f"<MaterialName900 name:{self.name} size:{self.size} offset:{self.chunk_header.offset}>"
-        )
+        return f"<MaterialName900 name:{self.name} size:{self.size} offset:{self.chunk_header.offset}>"

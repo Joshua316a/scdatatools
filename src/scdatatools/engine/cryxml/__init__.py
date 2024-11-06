@@ -152,9 +152,7 @@ class _CryXMLBParser:
             raise ParseError("Invalid CryXmlB Signature")
 
         self._attributes = [self._read_attribute(i) for i in range(self._header.attributes_count)]
-        self._child_indices = [
-            self._read_child_index(i) for i in range(self._header.child_table_count)
-        ]
+        self._child_indices = [self._read_child_index(i) for i in range(self._header.child_table_count)]
         self._nodes = [self._read_node(i) for i in range(self._header.node_count)]
 
         root_node = self._read_node(0)
@@ -338,7 +336,6 @@ class CryXmlConverter(plugins.P4KConverterPlugin):
         options: typing.Dict = None,
         monitor: typing.Callable = None,
     ) -> typing.Tuple[typing.List["P4KInfo"], typing.List[Path]]:
-
         options = options or {}
         unhandled_members = []
         extracted_paths = []

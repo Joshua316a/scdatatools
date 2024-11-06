@@ -92,7 +92,7 @@ class StarCitizen:
             possible_ver = self.game_folder.name.split("-")[-1].split(".")[-1]
             if possible_ver.isdigit():
                 self.version = possible_ver
-            sys.stderr.write(f"Warning: Unable to determine version of StarCitizen\n")
+            sys.stderr.write("Warning: Unable to determine version of StarCitizen\n")
 
         self.cache_dir = None
         if cache_dir:
@@ -186,14 +186,11 @@ class StarCitizen:
             unit="recs",
             unit_scale=True,
         ):
-
             path = f'{(dcb_path / r.filename).with_suffix("").as_posix()}.{r.id.value}.xml'
             try:
                 data = self.datacore.dump_record_json(r, indent=None).encode("utf-8")
             except Exception as e:
-                data = f"Failed to generate data for record {r.filename}:{r.id.value}. {e}".encode(
-                    "utf-8"
-                )
+                data = f"Failed to generate data for record {r.filename}:{r.id.value}. {e}".encode("utf-8")
                 print("\n" + data)
             if path in inv:
                 print(f"Error duplicate path: {path}")
@@ -312,8 +309,7 @@ class StarCitizen:
                             return self.version_label
             else:
                 sys.stderr.write(
-                    f"Could not determine version label for {self.version} "
-                    f"from library {launcher.library}"
+                    f"Could not determine version label for {self.version} " f"from library {launcher.library}"
                 )
                 return ""
         except KeyError:

@@ -23,12 +23,10 @@ class SCLocalization:
         if cache_dir is not None:
             logger.debug(f"Using localization cache {cache_dir}")
             if not (lcache := Path(cache_dir) / "localization").is_dir():
-                logger.debug(f"Building localization cache")
+                logger.debug("Building localization cache")
                 p4k = _get_p4k()
                 lcache.mkdir(parents=True)
-                p4k.extractall(
-                    members=p4k.search("Data/Localization/*/global.ini"), path=lcache, monitor=None
-                )
+                p4k.extractall(members=p4k.search("Data/Localization/*/global.ini"), path=lcache, monitor=None)
             localization_files = lcache.rglob("**/global.ini")
         else:
             p4k = _get_p4k()
@@ -41,7 +39,7 @@ class SCLocalization:
                 with l.open("rb") as f:
                     lang = Path(f.name).parts[-2]
                     content = f.read()
-                    content.lstrip(b'\xef\xbb\xbf')  # TODO: unknown header/version? does not seem to correlate to size
+                    content.lstrip(b"\xef\xbb\xbf")  # TODO: unknown header/version? does not seem to correlate to size
                     self.languages.append(lang)
                     self.translations[lang] = dict(
                         lower_key(_.split("=", 1))
@@ -50,7 +48,7 @@ class SCLocalization:
                     )
                     self.keys.update(self.translations[lang].keys())
             except UnicodeDecodeError:
-                logger.error(f'failed to load localization for {l.filename}')
+                logger.error(f"failed to load localization for {l.filename}")
         self.keys = sorted(self.keys)
 
     def gettext(self, key, language=None, default_response=None) -> str:
@@ -61,11 +59,7 @@ class SCLocalization:
         :param default_response: The value to be returned if no translation exists for the given `key`. Returns the
             `key` if `None`
         """
-        language = (
-            self.default_language
-            if (language is None or language not in self.languages)
-            else language
-        )
+        language = self.default_language if (language is None or language not in self.languages) else language
         key = key.lower()
         trans = self.translations.get(language, {}).get(key, "")
         if not trans and key.startswith("@"):

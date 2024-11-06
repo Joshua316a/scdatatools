@@ -48,10 +48,7 @@ class Blender:
             return
 
         if version is None:
-            version = set(
-                _["version"]
-                for _ in available_blender_installations(include_paths=include_path).values()
-            )
+            version = set(_["version"] for _ in available_blender_installations(include_paths=include_path).values())
 
         for v in version:
             print(f"Installed add-on to {str(install(v))}")

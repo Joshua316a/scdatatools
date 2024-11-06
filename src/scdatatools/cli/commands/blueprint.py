@@ -18,9 +18,7 @@ def resolve_blueprint(sc, entity):
         return record
     search = entity if entity.casefold().endswith(".xml") else entity + ".xml"
     records = [
-        record
-        for record in sc.datacore.search_filename(f"*/{search}")
-        if record.type == "EntityClassDefinition"
+        record for record in sc.datacore.search_filename(f"*/{search}") if record.type == "EntityClassDefinition"
     ]
     if len(records) > 1:
         logger.debug(f"{records =}")
@@ -113,7 +111,7 @@ class blueprint:
 
             generating_bp = progbar.add_task("Generating blueprint", total=None)
             if (bp := Path(entity_or_blueprint)).is_file():
-                print(f"TODO: handle already generated blueprints")
+                print("TODO: handle already generated blueprints")
                 sys.exit(1)
             else:
                 entity = resolve_blueprint(sc, entity_or_blueprint)

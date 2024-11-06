@@ -26,9 +26,9 @@ def strtobool(val) -> bool:
     'val' is anything else.
     """
     val = val.lower()
-    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+    if val in ("y", "yes", "t", "true", "on", "1"):
         return True
-    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+    elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
         raise ValueError(f"invalid truth value {val!r}")
@@ -122,9 +122,7 @@ def version_from_id_file(id_file) -> (dict, str):
         version = version_data.get("RequestedP4ChangeNum", None)
         version_label = f"{branch}-{version}"
     except Exception:
-        sys.stderr.write(
-            f"Warning: Unable to determine version of P4K file, missing or corrupt c_win_shader.id"
-        )
+        sys.stderr.write("Warning: Unable to determine version of P4K file, missing or corrupt c_win_shader.id")
     finally:
         if opened:
             id_file.close()
@@ -276,7 +274,7 @@ class StructureWithEnums:
                         return enumClass(value)
                 except ValueError:
                     pass
-            #else:
+            # else:
             #    sys.stderr.write(f'\n0x{value:x} is not valid for any of the types "{repr(classes)}"\n')
         return value
 
@@ -285,9 +283,7 @@ class StructureWithEnums:
         for field in self._fields_:
             attr, attr_type = field
             if attr in self._map:
-                attr_type = (
-                    repr(self._map[attr]) if len(self._map[attr]) > 1 else self._map[attr].__name__
-                )
+                attr_type = repr(self._map[attr]) if len(self._map[attr]) > 1 else self._map[attr].__name__
             else:
                 attr_type = attr_type.__name__
             value = getattr(self, attr)

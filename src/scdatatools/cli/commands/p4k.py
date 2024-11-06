@@ -81,7 +81,7 @@ class p4k:
             print("=" * 80)
             found_files = p.search(file_filter)
             if not found_files:
-                sys.stderr.write(f"No files found for filter")
+                sys.stderr.write("No files found for filter")
                 sys.exit(2)
             extract_file = found_files[0]
 

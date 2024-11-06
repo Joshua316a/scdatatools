@@ -29,19 +29,19 @@ def chunk_class_from_header(chunk_header: ChunkHeader, fallback=Chunk) -> typing
     """Returns the appropriate class for the given `chunk_header`"""
     try:
         if chunk_header.type not in ChunkType:
-            raise ValueError(f'Unhandled chunk type {chunk_header}')
+            raise ValueError(f"Unhandled chunk type {chunk_header}")
     except TypeError:
-        raise TypeError(f'Unhandled chunk header {chunk_header}')
+        raise TypeError(f"Unhandled chunk header {chunk_header}")
 
     chunk_version_handlers = CHUNK_CLASSES.setdefault(chunk_header.type, {})
     # if chunk_header.version not in chunk_version_handlers:
     #     logger.debug(f"Unhandled chunk {chunk_header}")
     #     return fallback
 
-    version = 'any' if not hasattr(chunk_header, 'version') else chunk_header.version
+    version = "any" if not hasattr(chunk_header, "version") else chunk_header.version
     if version not in chunk_version_handlers:
-        if 'any' in chunk_version_handlers:
-            version = 'any'
+        if "any" in chunk_version_handlers:
+            version = "any"
         else:
             logger.debug(f"Unhandled chunk version {chunk_header}")
             return fallback

@@ -9,20 +9,20 @@ class Manufacturer(DataCoreRecordObject):
 
     @property
     def display_name(self):
-        return self.object.properties['Localization'].properties['Name']
+        return self.object.properties["Localization"].properties["Name"]
 
     @property
     def short_name(self):
-        return self.object.properties['Localization'].properties['ShortName']
+        return self.object.properties["Localization"].properties["ShortName"]
 
     @property
     def description(self):
-        return self.object.properties['Localization'].properties['Description']
+        return self.object.properties["Localization"].properties["Description"]
 
     @property
     def logo(self):
-        return self.object.properties['Logo']
+        return self.object.properties["Logo"]
 
     @property
     def code(self):
-        return self.object.properties['Code']
+        return self.object.properties["Code"]

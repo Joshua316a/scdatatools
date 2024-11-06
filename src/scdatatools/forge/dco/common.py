@@ -38,9 +38,10 @@ def register_strong_pointer_handler(dco_type):
 
     def _record_handler_wrapper(handler_class):
         if dco_type in STRONG_POINTER_HANDLER:
-            raise Exception(f'Handler already defined for {handler_class}')
+            raise Exception(f"Handler already defined for {handler_class}")
         STRONG_POINTER_HANDLER[dco_type] = handler_class
         return handler_class
+
     return _record_handler_wrapper
 
 
@@ -51,9 +52,10 @@ def register_structure_instance_handler(dco_type):
 
     def _record_handler_wrapper(handler_class):
         if dco_type in STRUCTURE_INSTANCE_HANDLER:
-            raise Exception(f'Handler already defined for {handler_class}')
+            raise Exception(f"Handler already defined for {handler_class}")
         STRUCTURE_INSTANCE_HANDLER[dco_type] = handler_class
         return handler_class
+
     return _record_handler_wrapper
 
 
@@ -96,7 +98,8 @@ class DataCoreObject:
         # return {k: dco_from_datacore(self._datacore, v) for k, v in self.object.properties.items()}
 
     def __getattr__(self, item):
-        return self.properties[item]
+        properties = super().__getattribute__('properties')
+        return properties[item]
 
     @property
     def name(self):
@@ -115,15 +118,13 @@ class DataCoreRecordObject(DataCoreObject):
     automagically use the correct subclass for the :class:`Record` type.
     """
 
-    def __init__(self, datacore: "DataCoreBinary", guid_or_dco: typing.Union[str, GUID, Record]):
-        self.record = (
-            guid_or_dco if isinstance(guid_or_dco, Record) else datacore.records_by_guid[str(guid_or_dco)]
-        )
-        self._datacore = datacore
+    def __init__(self, sc: "StarCitizen", guid_or_dco: typing.Union[str, GUID, Record]):
+        self.record = guid_or_dco if isinstance(guid_or_dco, Record) else sc.datacore.records_by_guid[str(guid_or_dco)]
+        super().__init__(sc, self.record)
 
     @property
     def guid(self):
-        if hasattr(self.record, 'id'):
+        if hasattr(self.record, "id"):
             return self.record.id.value
         return self.record.value
 

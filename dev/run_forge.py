@@ -15,7 +15,7 @@ def run_forge():
     f = DataCoreBinary(dcf)
     end = time.process_time()
     print(f"Loaded DCB in {end-start}s")
-    print(f"\nReading every property on every record...")
+    print("\nReading every property on every record...")
     print("-" * 80)
 
     def _iter_props(r):

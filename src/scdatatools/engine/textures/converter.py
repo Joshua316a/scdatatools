@@ -14,7 +14,6 @@ from . import dds
 logger = logging.getLogger(__name__)
 
 
-
 def convert_buffer(
     inbuf: bytes,
     out_format: str = "default",
@@ -28,7 +27,7 @@ def convert_buffer(
         of the returned `bytes`
     """
 
-    out_format = 'tif' if out_format == "default" else out_format
+    out_format = "tif" if out_format == "default" else out_format
     out_format = out_format.replace(".", "")
 
     with Image.open(io.BytesIO(inbuf)) as img:
@@ -70,6 +69,7 @@ def tex_convert(
 
     with Image.open(infile) as img:
         img.save(outfile)
+        return outfile
 
 
 @plugins.register
@@ -88,7 +88,6 @@ class DDSTextureConverter(plugins.P4KConverterPlugin):
         options: typing.Dict = None,
         monitor: typing.Callable = None,
     ) -> typing.Tuple[typing.List["P4KInfo"], typing.List[Path]]:
-
         options = options or {}
         output_fmt = options.get("ddstexture_converter_fmt", "dds").casefold()
 
@@ -102,9 +101,7 @@ class DDSTextureConverter(plugins.P4KConverterPlugin):
         extracted_paths = []
         to_convert = []
         while members:
-            f = members[
-                -1
-            ]  # collect_parts needs the file to be in the list, so pop it later, -1 since we're popping
+            f = members[-1]  # collect_parts needs the file to be in the list, so pop it later, -1 since we're popping
             if ".dds" not in f.filename.casefold():
                 unhandled_members.append(members.pop())
             else:
@@ -132,16 +129,14 @@ class DDSTextureConverter(plugins.P4KConverterPlugin):
                         # only unsplit
                         dds.unsplit_dds(parts, outdds)
                         if monitor is not None:
-                            dds_header = [
-                                _ for _ in parts if _.endswith(".dds") or _.endswith(".dds.a")
-                            ][0]
+                            dds_header = [_ for _ in parts if _.endswith(".dds") or _.endswith(".dds.a")][0]
                             monitor(monitor_msg_from_info(parts[dds_header]))
 
                         if output_fmt != "dds":
                             to_convert.append((outdds, outpath))
                         extracted_paths.append(outpath.as_posix())
                     except Exception:
-                        logger.exception(f"Failed to un-split texture")
+                        logger.exception("Failed to un-split texture")
                         # re-add the parts to the unhandled so they at least get exported
                         for info in parts.values():
                             unhandled_members.append(info)

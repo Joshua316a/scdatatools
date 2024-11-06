@@ -8,7 +8,7 @@ from scdatatools.blender.utils import hashed_path_key
 logger = logging.getLogger(__name__)
 
 SCSHARDERS_BLEND = Path(__file__).parent / "SCShaders.blend"
-REQUIRED_SHADER_NODE_GROUPS = [    
+REQUIRED_SHADER_NODE_GROUPS = [
     ".IES mapping",
     "_Parallax (UV)",
     "_TintDecalConverter",
@@ -25,7 +25,7 @@ REQUIRED_SHADER_NODE_GROUPS = [
     "_Hologramcig",
     "_HumanSkin_V2",
     "_Organic",
-    "_UIPlane"    
+    "_UIPlane",
 ]
 
 
@@ -56,7 +56,7 @@ def tint_palette_node_group_for_entity(entity_name):
     ensure_node_groups_loaded()
 
     tint_group = bpy.data.node_groups.new(tint_group_name, "ShaderNodeTree")
-    tint_group['Type'] = 'tint_palette'
+    tint_group["Type"] = "tint_palette"
     outputs = {
         "Decal Color": "NodeSocketColor",
         "Decal Alpha": "NodeSocketFloatFactor",
@@ -96,12 +96,8 @@ def tint_palette_node_group_for_entity(entity_name):
         tex_conv_group.location = (300, 0)
         tint_group.links.new(decal_tex.outputs["Color"], tex_conv_group.inputs["Image"])
         tint_group.links.new(decal_tex.outputs["Alpha"], tex_conv_group.inputs["Alpha"])
-        tint_group.links.new(
-            tex_conv_group.outputs["Color"], tint_output_group.inputs["Decal Color"]
-        )
-        tint_group.links.new(
-            tex_conv_group.outputs["Alpha"], tint_output_group.inputs["Decal Alpha"]
-        )
+        tint_group.links.new(tex_conv_group.outputs["Color"], tint_output_group.inputs["Decal Color"])
+        tint_group.links.new(tex_conv_group.outputs["Alpha"], tint_output_group.inputs["Decal Alpha"])
 
     return bpy.data.node_groups[tint_group_name]
 
@@ -145,7 +141,7 @@ def create_light_texture(texture: Path):
     if not texture.is_file():
         print(f"Could not find light texture {texture}")
         return None
-    
+
     tex_node_name = hashed_path_key(texture)
     if tex_node_name in bpy.data.node_groups:
         return bpy.data.node_groups[tex_node_name]
@@ -173,8 +169,8 @@ def create_light_texture(texture: Path):
     mix_up_node.blend_type = "MULTIPLY"
     mix_up_node.location = (522, 0)
 
-    #falloff_node = new_node.nodes.new(type="ShaderNodeLightFalloff")
-    #falloff_node.location = (520, -260)
+    # falloff_node = new_node.nodes.new(type="ShaderNodeLightFalloff")
+    # falloff_node.location = (520, -260)
 
     multiply_node = new_node.nodes.new(type="ShaderNodeMath")
     multiply_node.location = (520, -260)
@@ -183,41 +179,29 @@ def create_light_texture(texture: Path):
 
     new_node_texture = new_node.nodes.new("ShaderNodeTexImage")
     new_node_texture.location = (154, 212)
-    new_node_texture.image = bpy.data.images.get(texture.name) or bpy.data.images.load(
-        texture.as_posix()
-    )
+    new_node_texture.image = bpy.data.images.get(texture.name) or bpy.data.images.load(texture.as_posix())
     new_node_texture.extension = "CLIP"
     new_node_texture.image.colorspace_settings.name = "sRGB"
 
     ensure_node_groups_loaded()
     new_node_IES_mapping = new_node.nodes.new("ShaderNodeGroup")
-    new_node_IES_mapping.node_tree = bpy.data.node_groups['.IES mapping']
+    new_node_IES_mapping.node_tree = bpy.data.node_groups[".IES mapping"]
 
     new_node_texcoord = new_node.nodes.new("ShaderNodeTexCoord")
-    new_node_texcoord.location = (-309,0)
+    new_node_texcoord.location = (-309, 0)
 
-    new_node.links.new(mix_node.outputs["Color"], 
-                       new_node_output.inputs["Color"])
-    new_node.links.new(new_node_texture.outputs["Color"], 
-                       mix_up_node.inputs["Color1"])
-    new_node.links.new(new_node_input.outputs["Color"], 
-                       mix_node.inputs["Color2"])
-    new_node.links.new(new_node_input.outputs["Angle"],
-                       new_node_IES_mapping.inputs["Angle"])
-    new_node.links.new(new_node_IES_mapping.outputs["Up"],
-                       mix_up_node.inputs["Color2"])
-    new_node.links.new(mix_up_node.outputs["Color"],
-                       mix_node.inputs["Color1"])                       
-    new_node.links.new(new_node_texcoord.outputs["Normal"], 
-                       new_node_IES_mapping.inputs["Vector"])
-    new_node.links.new(new_node_IES_mapping.outputs["Vector"], 
-                       new_node_texture.inputs["Vector"])
-    #new_node.links.new(new_node_texture.outputs["Color"], 
+    new_node.links.new(mix_node.outputs["Color"], new_node_output.inputs["Color"])
+    new_node.links.new(new_node_texture.outputs["Color"], mix_up_node.inputs["Color1"])
+    new_node.links.new(new_node_input.outputs["Color"], mix_node.inputs["Color2"])
+    new_node.links.new(new_node_input.outputs["Angle"], new_node_IES_mapping.inputs["Angle"])
+    new_node.links.new(new_node_IES_mapping.outputs["Up"], mix_up_node.inputs["Color2"])
+    new_node.links.new(mix_up_node.outputs["Color"], mix_node.inputs["Color1"])
+    new_node.links.new(new_node_texcoord.outputs["Normal"], new_node_IES_mapping.inputs["Vector"])
+    new_node.links.new(new_node_IES_mapping.outputs["Vector"], new_node_texture.inputs["Vector"])
+    # new_node.links.new(new_node_texture.outputs["Color"],
     #                   falloff_node.inputs[0])
-    #new_node.links.new(falloff_node.outputs["Quadratic"], 
+    # new_node.links.new(falloff_node.outputs["Quadratic"],
     #                   new_node_output.inputs["Strength"])
-    new_node.links.new(new_node_texture.outputs["Color"], 
-                       multiply_node.inputs[0])
-    new_node.links.new(multiply_node.outputs[0], 
-                       new_node_output.inputs["Strength"])
+    new_node.links.new(new_node_texture.outputs["Color"], multiply_node.inputs[0])
+    new_node.links.new(multiply_node.outputs[0], new_node_output.inputs["Strength"])
     return new_node

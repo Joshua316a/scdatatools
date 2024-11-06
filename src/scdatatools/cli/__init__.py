@@ -1,7 +1,6 @@
 import sys
-import logging
 
-from nubia import Nubia, Options, context
+from nubia import Nubia, Options
 
 from scdatatools.cli import commands
 from scdatatools.plugins import plugin_manager

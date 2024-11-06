@@ -37,7 +37,7 @@ def open_sc_dir(sc_dir: typing.Union[str, Path]) -> StarCitizen:
             sc_dir = sc_dir.parent
         else:
             sys.stderr.write(
-                f"Invalid argument for sc_dir. Must be a Star Citizen installation directory or a Data.p4k file\n"
+                "Invalid argument for sc_dir. Must be a Star Citizen installation directory or a Data.p4k file\n"
             )
             sys.exit(1)
 

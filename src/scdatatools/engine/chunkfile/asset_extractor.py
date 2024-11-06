@@ -50,7 +50,5 @@ class ModelAssetsExtractor(plugins.P4KConverterPlugin):
             if ext in handled_exts:
                 bp.add_file_to_extract(member.filename)
 
-        bp_files_to_extract = set(
-            sc.p4k.search(bp.extract_filter, ignore_case=True, mode="in_strip")
-        )
+        bp_files_to_extract = set(sc.p4k.search(bp.extract_filter, ignore_case=True, mode="in_strip"))
         return list(members_to_extract | bp_files_to_extract), []

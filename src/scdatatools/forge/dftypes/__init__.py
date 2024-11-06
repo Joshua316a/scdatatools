@@ -21,6 +21,7 @@ class DataCoreBase(LittleEndianStructure):
             return getattr(self._b_base_, "_dcb")
         return getattr(self, "_dcb")
 
+
 # In Datacore v6 all inheritors of this class utilize the newly added lookup table. I'm going to make a lazy edit here
 # for demonstration purposes, but we should probably add a means to determine which one to look up into from the version
 # if we don't just end up unifying the lookup.
@@ -91,11 +92,7 @@ class StructureDefinition(DataCoreNamed):
 
     @property
     def parent(self):
-        return (
-            None
-            if self.parent_index == DCB_NO_PARENT
-            else self.dcb.structure_definitions[self.parent_index]
-        )
+        return None if self.parent_index == DCB_NO_PARENT else self.dcb.structure_definitions[self.parent_index]
 
     @property
     def properties(self):
@@ -170,6 +167,7 @@ class EnumDefinition(DataCoreNamed):
             ],
         )
 
+
 # Utilizes reference string lookup table, can likely just use StringReference if no other classes are reliant on this.
 class EnumChoice(DataCoreBase):
     _fields_ = [("enum_choice_index", ctypes.c_uint32)]
@@ -243,9 +241,7 @@ class StructureInstance:
             elif data_type == DataTypes.Class:
                 end_offset = offset + property_definition.type_def.calculated_data_size
                 return (
-                    self.dcb.get_structure_instance_from_offset(
-                        property_definition.structure_index, offset
-                    ),
+                    self.dcb.get_structure_instance_from_offset(property_definition.structure_index, offset),
                     end_offset,
                 )
 
@@ -255,9 +251,7 @@ class StructureInstance:
             prop._dcb = self.dcb
 
             if data_type == DataTypes.EnumChoice:
-                prop._enum_definition = self.dcb.enum_definitions[
-                    property_definition.structure_index
-                ]
+                prop._enum_definition = self.dcb.enum_definitions[property_definition.structure_index]
             return prop.value, end_offset
         else:
             try:
@@ -288,9 +282,7 @@ class StructureInstance:
                     return clss, end_offset
                 elif data_type in self.dcb.values:
                     return (
-                        self.dcb.values[property_definition.data_type][
-                            first_index : first_index + count
-                        ],
+                        self.dcb.values[property_definition.data_type][first_index : first_index + count],
                         end_offset,
                     )
             except ValueError:
@@ -463,22 +455,11 @@ class Record(Pointer, DataCoreNamed):
         return self.dcb.string_for_offset(self.filename_offset)
 
     def __repr__(self):
-        struct_name = (
-            self.structure_definition.name
-            if self.structure_definition is not None
-            else DCB_NO_PARENT
-        )
-        return (
-            f"<Record name:{self.name} {self.id.value} struct:{struct_name} "
-            f"instance:{self.instance_index}>"
-        )
+        struct_name = self.structure_definition.name if self.structure_definition is not None else DCB_NO_PARENT
+        return f"<Record name:{self.name} {self.id.value} struct:{struct_name} " f"instance:{self.instance_index}>"
 
     def __str__(self):
-        struct_name = (
-            self.structure_definition.name
-            if self.structure_definition is not None
-            else DCB_NO_PARENT
-        )
+        struct_name = self.structure_definition.name if self.structure_definition is not None else DCB_NO_PARENT
         return f"record:{self.name}:{self.id.value}_struct:{struct_name}"
 
 
@@ -513,10 +494,10 @@ DATA_TYPE_LOOKUP = {
     DataTypes.WeakPointer: WeakPointer,
     DataTypes.StrongPointer: StrongPointer,
     # DataTypes.Class: ,
-    DataTypes.EnumChoice: EnumChoice, # Can probably just use StringReference under Datacore v6
-    DataTypes.EnumValueName: StringReference2, # Unfortunately this uses the new table in Datacore v6
+    DataTypes.EnumChoice: EnumChoice,  # Can probably just use StringReference under Datacore v6
+    DataTypes.EnumValueName: StringReference2,  # Unfortunately this uses the new table in Datacore v6
     DataTypes.GUID: GUID,
-    DataTypes.Locale: LocaleReference, # Can probably also just use StringReference under Datacore v6
+    DataTypes.Locale: LocaleReference,  # Can probably also just use StringReference under Datacore v6
     DataTypes.Double: ctypes.c_double,
     DataTypes.Float: ctypes.c_float,
     DataTypes.StringRef: StringReference,

@@ -10,17 +10,13 @@ def install_blender_addon(blender_ver, addon_name, addon_template) -> Path:
 
     if sys.platform == "win32":
         addon_py = Path(
-            f"{os.environ['APPDATA']}/Blender Foundation/blender/"
-            f"{blender_ver}/scripts/addons/{addon_name}.py"
+            f"{os.environ['APPDATA']}/Blender Foundation/blender/" f"{blender_ver}/scripts/addons/{addon_name}.py"
         ).expanduser()
     elif sys.platform == "linux":
-        addon_py = Path(
-            f"~/.config/blender/{blender_ver}/scripts/addons/{addon_name}.py"
-        ).expanduser()
+        addon_py = Path(f"~/.config/blender/{blender_ver}/scripts/addons/{addon_name}.py").expanduser()
     elif sys.platform == "darwin":
         addon_py = Path(
-            f"~/Library/Application Support/Blender/"
-            f"{blender_ver}/scripts/addons/{addon_name}.py"
+            f"~/Library/Application Support/Blender/" f"{blender_ver}/scripts/addons/{addon_name}.py"
         ).expanduser()
     else:
         raise ValueError(f"Unsupported platform {sys.platform}")

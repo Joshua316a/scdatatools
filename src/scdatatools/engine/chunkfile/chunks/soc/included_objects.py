@@ -17,7 +17,7 @@ class IncludedObjectType(ctypes.LittleEndianStructure):
 
     @property
     def chunk_size(self):
-        return ctypes.sizeof(self) + getattr(self, '_adjusted_size', 0)
+        return ctypes.sizeof(self) + getattr(self, "_adjusted_size", 0)
 
     @property
     def filename(self):
@@ -33,10 +33,7 @@ class IncludedObjectType(ctypes.LittleEndianStructure):
 
 class UnknownIncludedObjectType(IncludedObjectType):
     _pack_ = 1
-    _fields_ = [
-        ("object_type", ctypes.c_uint32),
-        ("data", ctypes.c_byte * 180)
-    ]
+    _fields_ = [("object_type", ctypes.c_uint32), ("data", ctypes.c_byte * 180)]
 
     @property
     def filename(self):
@@ -161,15 +158,11 @@ class IncludedObjects(Chunk):
         # read mtls/palettes
         num_mtls, num_palettes = struct.unpack("<HH", self.chunk_data.read(4))
         for i in range(num_mtls):
-            self.materials.append(
-                self.chunk_data.read(CHUNK_STR_LEN).strip(b"\x00").decode("utf-8")
-            )
+            self.materials.append(self.chunk_data.read(CHUNK_STR_LEN).strip(b"\x00").decode("utf-8"))
 
         # read tint palettes
         for i in range(num_palettes):
-            self.tint_palettes.append(
-                self.chunk_data.read(CHUNK_STR_LEN).strip(b"\x00").decode("utf-8")
-            )
+            self.tint_palettes.append(self.chunk_data.read(CHUNK_STR_LEN).strip(b"\x00").decode("utf-8"))
 
         self.filenames = self.cgfs + self.materials
 
@@ -206,9 +199,7 @@ class IncludedObjects(Chunk):
                 continue
 
             try:
-                self.objects.append(
-                    obj_class.from_buffer(self.chunk_data.data, self.chunk_data.tell(), self)
-                )
+                self.objects.append(obj_class.from_buffer(self.chunk_data.data, self.chunk_data.tell(), self))
                 if _last_known > 0:
                     logger.debug(
                         f"SOC IncludedObject: Skipped block of {self.chunk_data.tell() - _last_known} bytes "
@@ -218,7 +209,7 @@ class IncludedObjects(Chunk):
                 obj_size = self.objects[-1].chunk_size
                 self.chunk_data.seek(obj_size)
                 len_objects -= obj_size
-            except ValueError as e:
+            except ValueError:
                 # skip a uin32
                 self.chunk_data.seek(4)
                 len_objects -= 4

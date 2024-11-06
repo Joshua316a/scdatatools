@@ -37,9 +37,7 @@ class SoundBank:
         try:
             while offset < len(self.raw_data):
                 signature = self.raw_data[offset : offset + 4]
-                hdr = bnk_defs.HEADER_FOR_SIGNATURE[bytes(signature)].from_buffer(
-                    self.raw_data, offset
-                )
+                hdr = bnk_defs.HEADER_FOR_SIGNATURE[bytes(signature)].from_buffer(self.raw_data, offset)
                 hdr.offset = offset
                 setattr(
                     self,
@@ -87,9 +85,7 @@ class BankManager:
                     found.append(self.game_objects[k][t])
         return found
 
-    def game_object_for_id(
-        self, obj_id: int, obj_type: hirc_defs.HIRCObjectTypes = None
-    ) -> hirc_defs.HIRCObject:
+    def game_object_for_id(self, obj_id: int, obj_type: hirc_defs.HIRCObjectTypes = None) -> hirc_defs.HIRCObject:
         """
         Find an object with `obj_id` in the loaded game object
         :param obj_id: `int` id to find
@@ -137,22 +133,17 @@ class BankManager:
             for sid in obj.sounds:
                 try:
                     wems.extend(
-                        self._find_wems_from_hirc_object(
-                            self.game_object_for_id(sid), _searched=_searched + [obj.id]
-                        )
+                        self._find_wems_from_hirc_object(self.game_object_for_id(sid), _searched=_searched + [obj.id])
                     )
                 except KeyError as e:
                     logger.error(
-                        f"Error looking up sound id from HIRCRandom {obj.id} in "
-                        f'{obj_dict["bank"].filename}: {e}'
+                        f"Error looking up sound id from HIRCRandom {obj.id} in " f'{obj_dict["bank"].filename}: {e}'
                     )
             return wems
         elif obj.type in BRUTE_FORCE_TYPES:
             found_ids = [
                 _
-                for _ in self.search_for_ids_in_buf(
-                    obj_dict["bank"].raw_data[obj.offset : obj.offset + obj.length]
-                )
+                for _ in self.search_for_ids_in_buf(obj_dict["bank"].raw_data[obj.offset : obj.offset + obj.length])
                 if _["object"].id != obj.id
             ]
 

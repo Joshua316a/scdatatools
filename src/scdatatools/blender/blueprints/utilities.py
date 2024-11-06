@@ -49,6 +49,7 @@ class RemoveSCBBoxes(Operator):
             bpy.data.objects.remove(bpy.data.objects[obj])
         return {"FINISHED"}
 
+
 class RemoveSCDesigner(Operator):
     """Removes SC _designer objects"""
 
@@ -59,6 +60,7 @@ class RemoveSCDesigner(Operator):
         for obj in [_ for _ in bpy.data.objects.keys() if "_designer_" in _.lower()]:
             bpy.data.objects.remove(bpy.data.objects[obj])
         return {"FINISHED"}
+
 
 class RemoveSCVisArea(Operator):
     """Removes SC _bbox objects"""
@@ -161,7 +163,6 @@ class FixBonesPosition(Operator):
     bl_label = "Fix Bones Position"
 
     def execute(self, context):
-
         if fix_bones_position():
             return {"FINISHED"}
         return {"CANCELLED"}

@@ -35,9 +35,7 @@ class P4KConverterPlugin(DataToolsPlugin):
 
     def register(self):
         super().register()
-        plugin_manager.register_hook(
-            P4KConverterPlugin.CONVERTER_HOOK, self.__class__, **self.converter_hook_kwargs
-        )
+        plugin_manager.register_hook(P4KConverterPlugin.CONVERTER_HOOK, self.__class__, **self.converter_hook_kwargs)
 
     @classmethod
     def converters(cls):
@@ -96,9 +94,7 @@ class PluginManager:
     def register_plugin(self, plugin: DataToolsPlugin):
         plug = f"{plugin.__module__}.{plugin.__qualname__}"
         if not issubclass(plugin, self.PLUGIN_CLASS):
-            raise ValueError(
-                f'Invalid plugin class type for "{plug}", must inherit from {self.PLUGIN_CLASS}'
-            )
+            raise ValueError(f'Invalid plugin class type for "{plug}", must inherit from {self.PLUGIN_CLASS}')
         if plug in self.plugins:
             raise KeyError(f"Plugin {plug} has already been registered")
         self.plugins[plug] = plugin()
@@ -149,9 +145,7 @@ class PluginManager:
     def discover_plugins(cls, plugins_dir=None):
         """Dynamically discover and load plugins"""
         excluded_plugins = [_.casefold() for _ in os.environ.get("SCDT_PLUGINS_EXCLUDE", "").split(",")]
-        logger.debug(
-            f"Discovering plugins (exclude: {excluded_plugins})"
-        )
+        logger.debug(f"Discovering plugins (exclude: {excluded_plugins})")
         discovered_plugins = {
             name: importlib.import_module(name)
             for finder, name, ispkg in pkgutil.iter_modules()

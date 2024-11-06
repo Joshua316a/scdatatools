@@ -27,7 +27,7 @@ def reduce_pos(point):
     def shift_reduce(pos):
         shift_delta = 2
         print("shift reduce pos :", pos)
-        shift = len(str(pos).split('.')[0].replace('-', '')) / shift_delta
+        shift = len(str(pos).split(".")[0].replace("-", "")) / shift_delta
         print("shift value: ", shift)
         return float(Decimal.shift(Decimal(round(pos)), round(-shift)))
 
@@ -70,25 +70,15 @@ class StreamingObjectContainer:
 
     @cached_property
     def included_objects(self):
-        return {
-            cid: chunk
-            for cid, chunk in self.chunks.items()
-            if isinstance(chunk, chunks.IncludedObjects)
-        }
+        return {cid: chunk for cid, chunk in self.chunks.items() if isinstance(chunk, chunks.IncludedObjects)}
 
     @cached_property
     def cryxml_chunks(self):
-        return {
-            cid: chunk
-            for cid, chunk in self.chunks.items()
-            if isinstance(chunk, chunks.CryXMLBChunk)
-        }
+        return {cid: chunk for cid, chunk in self.chunks.items() if isinstance(chunk, chunks.CryXMLBChunk)}
 
     @cached_property
     def json_chunks(self):
-        return {
-            cid: chunk for cid, chunk in self.chunks.items() if isinstance(chunk, chunks.JSONChunk)
-        }
+        return {cid: chunk for cid, chunk in self.chunks.items() if isinstance(chunk, chunks.JSONChunk)}
 
 
 class ObjectContainerInstance:
@@ -106,13 +96,13 @@ class ObjectContainerInstance:
     }
 
     def __init__(
-            self,
-            sc: "StarCitizen",
-            name: str,
-            root: "ObjectContainer",
-            parent: typing.Union["ObjectContainer", "ObjectContainerInstance"],
-            entdata: dict = None,
-            **kwargs,
+        self,
+        sc: "StarCitizen",
+        name: str,
+        root: "ObjectContainer",
+        parent: typing.Union["ObjectContainer", "ObjectContainerInstance"],
+        entdata: dict = None,
+        **kwargs,
     ):
         self._sc = sc
         self.name = name
@@ -142,23 +132,23 @@ class ObjectContainerInstance:
         self.position = vector_from_csv(self._attrs.get("position", "0,0,0"))
 
         try:
-            self.hidden = self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].properties.hideInStarmap
+            self.hidden = self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].properties.hideInStarmap
         except (KeyError, AttributeError):
             self.hidden = False
         try:
-            self.size = self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].properties.size
+            self.size = self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].properties.size
         except (KeyError, AttributeError):
             self.size = 0
         try:
-            self.icon = self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].properties.navIcon
+            self.icon = self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].properties.navIcon
         except (KeyError, AttributeError):
             self.icon = None
         try:
-            self.geom = self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].properties.starMapGeomPath
+            self.geom = self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].properties.starMapGeomPath
         except (KeyError, AttributeError):
             self.geom = None
         try:
-            self.mtl = self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].properties.starMapMaterialPath
+            self.mtl = self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].properties.starMapMaterialPath
         except (KeyError, AttributeError):
             self.mtl = None
 
@@ -168,19 +158,17 @@ class ObjectContainerInstance:
             self.entity_name = ""
 
         self.display_name = self.entity_name
-        if 'starMapRecord' in self.attrs:
+        if "starMapRecord" in self.attrs:
             try:
                 self.display_name = self._sc.gettext(
-                    self._sc.datacore.records_by_guid[self.attrs['starMapRecord']].name
+                    self._sc.datacore.records_by_guid[self.attrs["starMapRecord"]].name
                 )
             except KeyError:
                 pass
 
         if isinstance(parent, ObjectContainerInstance):
             self.universal_position = parent.universal_position + self.position
-            self.universal_rotation = (
-                    parent.universal_rotation * self.rotation
-            )  # TODO: is this actually a thing?
+            self.universal_rotation = parent.universal_rotation * self.rotation  # TODO: is this actually a thing?
         else:
             self.universal_position = self.position
             self.universal_rotation = self.rotation
@@ -203,9 +191,7 @@ class ObjectContainerInstance:
         return self.children[item]
 
     def duplicate(self, parent: typing.Union["ObjectContainer", "ObjectContainerInstance"]):
-        return ObjectContainerInstance(
-            sc=self._sc, name=self.name, root=parent.root, parent=parent, **self._attrs
-        )
+        return ObjectContainerInstance(sc=self._sc, name=self.name, root=parent.root, parent=parent, **self._attrs)
 
     def add_child(self, child_id, child):
         self._children_by_id[child_id] = child
@@ -256,9 +242,7 @@ class ObjectContainerInstance:
         return attrs
 
     def __repr__(self):
-        return (
-            f"<ObjectContainerInstance {self.name} parent:{self.parent.name} root:{self.root.name}>"
-        )
+        return f"<ObjectContainerInstance {self.name} parent:{self.parent.name} root:{self.root.name}>"
 
 
 class ObjectContainer:
@@ -276,9 +260,7 @@ class ObjectContainer:
 
         self._p4k_path = Path(self.socpak.filename)
         self._pak_name = self._p4k_path.stem
-        self._load_soc_xml(
-            self._p4k_path.parent / self._p4k_path.stem / f"{self._p4k_path.stem}.xml"
-        )
+        self._load_soc_xml(self._p4k_path.parent / self._p4k_path.stem / f"{self._p4k_path.stem}.xml")
 
         def _check_additional(ext: str):
             check_path = self._p4k_path.parent / self._p4k_path.stem / f"{self._p4k_path.stem}{ext}"
@@ -342,14 +324,12 @@ class ObjectContainer:
                 ]
 
                 try:
-                    ent_info = self._sc.p4k.getinfo(
-                        f'{self._pak_base}/entdata/{child_attrs["guid"]}.entxml'
-                    )
+                    ent_info = self._sc.p4k.getinfo(f'{self._pak_base}/entdata/{child_attrs["guid"]}.entxml')
                     child_attrs["entdata"] = dict_from_cryxml_file(ent_info.open())["Entity"]
                 except KeyError:
                     child_attrs["entdata"] = {}
 
-                if child_attrs['name'].endswith('.socpak'):
+                if child_attrs["name"].endswith(".socpak"):
                     child = ObjectContainerInstance(
                         self._sc, child_attrs.pop("name"), root=self, parent=cur_parent, **child_attrs
                     )
@@ -363,15 +343,11 @@ class ObjectContainer:
 
     def _load_soc(self, soc_etree):
         attrs = dict(**soc_etree.attrib)
-        soc_path = (
-            f"{self._pak_base}/{norm_path(attrs['name']).lower().replace(f'{self._pak_name}/', '')}"
-        )
+        soc_path = f"{self._pak_base}/{norm_path(attrs['name']).lower().replace(f'{self._pak_name}/', '')}"
         try:
             soc_info = self._sc.p4k.getinfo(soc_path)
         except KeyError:
-            logger.error(
-                f'soc "{attrs["name"]}" not found for object container {self.socpak.filename}'
-            )
+            logger.error(f'soc "{attrs["name"]}" not found for object container {self.socpak.filename}')
             return
         soc = StreamingObjectContainer(soc_info, self, attrs)
         self.socs[soc.name] = soc
@@ -397,7 +373,7 @@ class ObjectContainerManager:
             socpak = norm_path(f'{"" if socpak.lower().startswith("data") else "data/"}{socpak}')
             socpak = self.sc.p4k.getinfo(socpak)
 
-        if socpak.filename in self.object_containers and not os.environ.get('SCDT_OC_ALWAYS_LOAD', '0') == '1':
+        if socpak.filename in self.object_containers and not os.environ.get("SCDT_OC_ALWAYS_LOAD", "0") == "1":
             return self.object_containers[socpak.filename]
 
         oc = ObjectContainer(self.sc, socpak)

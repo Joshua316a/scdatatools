@@ -38,10 +38,6 @@ def xml_key_search(bp: "Blueprint", path: str, p4k_info: "P4KInfo", *args, **kwa
     raw = bp.sc.p4k.open(p4k_info).read()
     if p4k_info.filename.lower().endswith("_editor.xml"):
         return True  # found in socpaks, doesnt include anything useful from the client side
-    x = (
-        dict_from_cryxml_string(raw)
-        if is_cryxmlb_file(raw)
-        else etree_to_dict(ElementTree.fromstring(raw))
-    )
+    x = dict_from_cryxml_string(raw) if is_cryxmlb_file(raw) else etree_to_dict(ElementTree.fromstring(raw))
     bp.add_file_to_extract(dict_search(x, RECORD_KEYS_WITH_PATHS, ignore_case=True))
     return True

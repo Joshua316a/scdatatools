@@ -1,22 +1,10 @@
-import time
 import typing
 import logging
-import traceback
-import subprocess
 from pathlib import Path
-import concurrent.futures
 
 from scdatatools.utils import log_time
 from scdatatools.engine.chunkfile.converter import (
-    CGF_CONVERTER_MODEL_EXTS,
-    CGF_CONVERTER_TIMEOUT,
     CGF_CONVERTER_DEFAULT_OPTS,
-    CGF_CONVERTER,
-)
-from scdatatools.engine.textures import (
-    tex_convert,
-    collect_and_unsplit,
-    is_glossmap,
 )
 from scdatatools.engine.chunkfile.converter import CGFModelConverter
 from scdatatools.engine.textures.converter import DDSTextureConverter
@@ -111,9 +99,7 @@ def extract_blueprint(
             converter_options.setdefault("cgf_converter_bin", cgf_converter_bin)
             converter_options.setdefault("cgf_converter_opts", cgf_converter_opts)
 
-        files_to_extract = sc.p4k.search(
-            blueprint.extract_filter, ignore_case=True, mode="in_strip", exclude=exclude
-        )
+        files_to_extract = sc.p4k.search(blueprint.extract_filter, ignore_case=True, mode="in_strip", exclude=exclude)
         extracted_files = sc.p4k.extractall(
             outdir,
             files_to_extract,

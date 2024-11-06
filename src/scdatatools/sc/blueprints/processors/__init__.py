@@ -70,9 +70,7 @@ class BluePrintProcessorManager:
             if index == -1:
                 self._processors_for_datacore_type.setdefault(datacore_type, []).append(processor)
             else:
-                self._processors_for_datacore_type.setdefault(datacore_type, []).insert(
-                    index, processor
-                )
+                self._processors_for_datacore_type.setdefault(datacore_type, []).insert(index, processor)
         return processor
 
     def unregister_datacore_type_processor(self, record_type, processor):
@@ -98,10 +96,7 @@ class BluePrintProcessorManager:
             )
             return False
 
-        if (
-            filetype not in self._processors_for_filetype
-            and filetype.split(".")[0] not in IGNORED_FILETYPES
-        ):
+        if filetype not in self._processors_for_filetype and filetype.split(".")[0] not in IGNORED_FILETYPES:
             blueprint.log(f"unhandled p4k file: {path}", logging.WARNING)
             return False
 
@@ -110,9 +105,7 @@ class BluePrintProcessorManager:
                 blueprint.log(f"process: ({filetype}) {p4k_info.filename}")
                 return True
 
-    def process_datacore_object(
-        self, blueprint: "Blueprint", object: "DataCoreBase", *args, **kwargs
-    ) -> bool:
+    def process_datacore_object(self, blueprint: "Blueprint", object: "DataCoreBase", *args, **kwargs) -> bool:
         """Processes the given `object` for `Blueprint` using the appropriate processor for its `type`.
 
         Multiple processors for a `datacore_type` may be registered, and each one will be tried in turn until one is

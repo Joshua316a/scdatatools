@@ -23,4 +23,4 @@ def inventory(scdir: Path, outfile: Path):
             print(f"Writing {outfile.name}")
             json.dump(i, o, indent=2, default=str)
     except KeyboardInterrupt:
-        sys.stderr.write(f"\nExiting, the inventory file may not be complete...\n\n")
+        sys.stderr.write("\nExiting, the inventory file may not be complete...\n\n")

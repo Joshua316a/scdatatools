@@ -22,15 +22,15 @@ def get_library_folder(rsilauncher_log_file: typing.Union[Path, str] = None) -> 
             # of the Linux community outside of users who just install the launcher using their system Wine.
             sc_dir = Path(gamedir_conf_path.open("r", encoding="utf-8").read().rstrip())
             lib_dir = sc_dir.parent if sc_dir.is_dir() else None
-            if lib_dir is not None and lib_dir.is_dir() and (lib_dir / 'StarCitizen').is_dir():
+            if lib_dir is not None and lib_dir.is_dir() and (lib_dir / "StarCitizen").is_dir():
                 return lib_dir
         else:
-            if rsilauncher_log_file is None: # Oh no :(
+            if rsilauncher_log_file is None:  # Oh no :(
                 # Check lug-helper Wine and system Wine paths
                 winedir_conf_path = Path(os.path.expandvars(r"$HOME/.config/starcitizen-lug/winedir.conf"))
-                if winedir_conf_path.is_file(): # lug-helper
+                if winedir_conf_path.is_file():  # lug-helper
                     wine_dir = Path(winedir_conf_path.open("r", encoding="utf-8").read().rstrip())
-                else: # System Wine
+                else:  # System Wine
                     wine_dir = Path(os.path.expandvars(r"$HOME/.wine"))
 
                 if wine_dir.is_dir():
@@ -55,41 +55,42 @@ def get_library_folder(rsilauncher_log_file: typing.Union[Path, str] = None) -> 
                     break
             else:
                 return None
-    else: # No other platforms supported
+    else:  # No other platforms supported
         return None
 
     if rsilauncher_log_file is not None and rsilauncher_log_file.is_file():
-            for log in rsilauncher_log_file.open("r", encoding="utf-8", errors="surrogateescape").read().split("},\n{")[::-1]:
-                try:
-                    log = '{' + log.strip().strip(',').lstrip('{') + "}"
-                    event = json.loads(log)
-                    if 'info' in event:
-                        info_key = 'info'
-                    elif '[browser][info] ' in event:
-                        info_key = '[browser][info] '
-                    else:
-                        continue
-                    event_type = event.get(info_key, {}).get("event", "")
-                    lib_dir_str = None
-                    if event_type == "INSTALLER@INSTALL":
-                        lib_dir_str = event[info_key]['data']['gameInformation']['libraryFolder']
-                    elif event_type == "CHANGE_LIBRARY_FOLDERS":
-                        lib_dir_str = event[info_key]['data']['filePaths'][0]
+        for log in (
+            rsilauncher_log_file.open("r", encoding="utf-8", errors="surrogateescape").read().split("},\n{")[::-1]
+        ):
+            try:
+                log = "{" + log.strip().strip(",").lstrip("{") + "}"
+                event = json.loads(log)
+                if "info" in event:
+                    info_key = "info"
+                elif "[browser][info] " in event:
+                    info_key = "[browser][info] "
+                else:
+                    continue
+                event_type = event.get(info_key, {}).get("event", "")
+                lib_dir_str = None
+                if event_type == "INSTALLER@INSTALL":
+                    lib_dir_str = event[info_key]["data"]["gameInformation"]["libraryFolder"]
+                elif event_type == "CHANGE_LIBRARY_FOLDERS":
+                    lib_dir_str = event[info_key]["data"]["filePaths"][0]
 
-                    library_folder = None
-                    # Handle path transformations
-                    if lib_dir_str is not None:
-                        if platform == "linux":
-                            drive_letter = lib_dir_str[:2]
-                            library_folder = wine_dir / "dosdevices"/ drive_letter.lower() / lib_dir_str[:4].split("//")
-                        elif platform == "win32":
-                            library_folder = Path(lib_dir_str)
+                library_folder = None
+                # Handle path transformations
+                if lib_dir_str is not None:
+                    if platform == "linux":
+                        drive_letter = lib_dir_str[:2]
+                        library_folder = wine_dir / "dosdevices" / drive_letter.lower() / lib_dir_str[:4].split("//")
+                    elif platform == "win32":
+                        library_folder = Path(lib_dir_str)
 
-                    if (library_folder is not None and library_folder.is_dir() and
-                            (library_folder / 'StarCitizen').is_dir()):
-                        return library_folder
-                except (KeyError, IndexError, JSONDecodeError, AttributeError) as e:
-                    pass
+                if library_folder is not None and library_folder.is_dir() and (library_folder / "StarCitizen").is_dir():
+                    return library_folder
+            except (KeyError, IndexError, JSONDecodeError, AttributeError):
+                pass
 
     # could not determine the library folder from the launcher log, try the default path
     default_dir = None
@@ -97,7 +98,7 @@ def get_library_folder(rsilauncher_log_file: typing.Union[Path, str] = None) -> 
         default_dir = drive_c_dir / "Program Files" / "Roberts Space Industries"
     elif platform == "win32":
         default_dir = Path(os.path.expandvars(r"%PROGRAMFILES%\Roberts Space Industries"))
-    if default_dir is not None and default_dir.is_dir() and (default_dir / 'StarCitizen').is_dir():
+    if default_dir is not None and default_dir.is_dir() and (default_dir / "StarCitizen").is_dir():
         return default_dir
     return None
 

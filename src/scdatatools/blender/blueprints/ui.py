@@ -27,7 +27,7 @@ class SCImportEntityImportedContainersPanel(bpy.types.Panel):
     bl_context = ""
 
     def draw(self, context):
-        layout = self.layout        
+        layout = self.layout
         for container in sorted(self.importer.imported_containers):
             layout.row().label(text=container)
 
@@ -40,20 +40,18 @@ class SCImportEntityAvailableContainersPanel(bpy.types.Panel):
     bl_region_type = "UI"
     bl_parent_id = "VIEW3D_PT_SCImportEntity_Panel"
     bl_context = ""
-    
+
     def draw(self, context):
         available = set(self.importer.containers) - set(self.importer.imported_containers)
         for container in sorted(available):
             row = self.layout.row()
             row.label(text=container)
-            op = row.operator(
-                "scdt.import_entity_container", icon="IMPORT", text=''
-            )
+            op = row.operator("scdt.import_entity_container", icon="IMPORT", text="")
             op.entity_name = self.importer.entity_collection.name
             op.container = container
-                            
+
         if available:
             self.layout.separator()
-            op = self.layout.row().operator("scdt.import_entity_container", text=f"Import All")
+            op = self.layout.row().operator("scdt.import_entity_container", text="Import All")
             op.entity_name = self.importer.entity_collection.name
             op.container = ",".join(available)

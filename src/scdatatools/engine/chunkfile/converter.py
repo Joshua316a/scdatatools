@@ -11,9 +11,7 @@ from scdatatools import plugins
 logger = logging.getLogger(__name__)
 CGF_CONVERTER_MODEL_EXTS = ["cga", "cgf", "chr", "skin"]
 CGF_CONVERTER_TIMEOUT = 5 * 60  # assume cgf converter is stuck after this much time
-CGF_CONVERTER_DEFAULT_OPTS = (
-    '-en "$physics_proxy" -em proxy -em nocollision_faces -prefixmatnames -notex'
-)
+CGF_CONVERTER_DEFAULT_OPTS = '-en "$physics_proxy" -em proxy -em nocollision_faces -prefixmatnames -notex'
 CGF_CONVERTER = shutil.which("cgf-converter")
 
 
@@ -37,7 +35,6 @@ class CGFModelConverter(plugins.P4KConverterPlugin):
         options: typing.Dict = None,
         monitor: typing.Callable = None,
     ) -> typing.Tuple[typing.List["P4KInfo"], typing.List[Path]]:
-
         options = options or {}
         cgf_converter = options.get("cgf_converter_bin", CGF_CONVERTER)
         cgf_converter_opts = options.get("cgf_converter_opts", "")
@@ -78,12 +75,8 @@ class CGFModelConverter(plugins.P4KConverterPlugin):
         extracted_paths.extend(extracted_models)
 
         def _do_model_convert(model_file):
-            cgf_cmd = (
-                f'"{cgf_converter}" {cgf_converter_opts} "{model_file}" -objectdir "{obj_dir}"'
-            )
-            cgf = subprocess.Popen(
-                cgf_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            cgf_cmd = f'"{cgf_converter}" {cgf_converter_opts} "{model_file}" -objectdir "{obj_dir}"'
+            cgf = subprocess.Popen(cgf_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             start_time = time.time()
             while (time.time() - start_time) < CGF_CONVERTER_TIMEOUT:

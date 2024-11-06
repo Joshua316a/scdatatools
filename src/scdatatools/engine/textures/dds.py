@@ -199,9 +199,9 @@ class SCDdsImageFile(DdsImagePlugin.DdsImageFile):
                     self.info["gamma"] = 1 / 2.2
                     n = 7
                 elif dxgi_format in (
-                        DXGI_FORMAT_R8G8B8A8_TYPELESS,
-                        DXGI_FORMAT_R8G8B8A8_UNORM,
-                        DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                    DXGI_FORMAT_R8G8B8A8_TYPELESS,
+                    DXGI_FORMAT_R8G8B8A8_UNORM,
+                    DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
                 ):
                     self.tile = [("raw", (0, 0) + self.size, 0, ("RGBA", 0, 1))]
                     if dxgi_format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -214,9 +214,7 @@ class SCDdsImageFile(DdsImagePlugin.DdsImageFile):
                 msg = f"Unimplemented pixel format {repr(fourcc)}"
                 raise NotImplementedError(msg)
 
-            self.tile = [
-                ("bcn", (0, 0) + self.size, data_start, (n, self.pixel_format))
-            ]
+            self.tile = [("bcn", (0, 0) + self.size, data_start, (n, self.pixel_format))]
 
 
 Image.register_open(SCDdsImageFile.format, SCDdsImageFile, DdsImagePlugin._accept)
@@ -262,9 +260,7 @@ def unsplit_dds(
             parts[n] = p
 
     if hdr_data is None:
-        raise DDSNotSplit(
-            f'Could not determine the DDS header file from {",".join(dds_files.keys())}'
-        )
+        raise DDSNotSplit(f'Could not determine the DDS header file from {",".join(dds_files.keys())}')
 
     if isinstance(hdr_data, (P4KInfo, Path)):
         hdr_data = hdr_data.open("rb").read()
@@ -279,7 +275,7 @@ def unsplit_dds(
     dds_magic, dds_hdr_len = struct.unpack("<4sI", hdr_data[:8])
     dds_hdr_len += 4  # hdr_len does not include the magic bytes
     if dds_magic != b"DDS ":
-        raise ValueError(f"Invalid DDS header")
+        raise ValueError("Invalid DDS header")
 
     if hdr_data[84:88] == b"DX10":
         dds_hdr_len += 20
@@ -311,9 +307,7 @@ def unsplit_dds(
     return Path(outfile)
 
 
-def collect_parts(
-    dds_file: typing.Union[str, Path, P4KInfo], from_list: typing.List[P4KInfo] = None
-) -> typing.Dict:
+def collect_parts(dds_file: typing.Union[str, Path, P4KInfo], from_list: typing.List[P4KInfo] = None) -> typing.Dict:
     """Collect all of the component parts of a split dds texture and return them as a dict where the keys are the
     filename and the value is the `P4KInfo` or `Path` of the part.
 
@@ -322,22 +316,13 @@ def collect_parts(
     """
     if isinstance(dds_file, P4KInfo):
         dds_filename = Path(dds_file.filename)
-        basename = (
-            (dds_filename.parent / dds_filename.stem.split(".")[0])
-            .with_suffix(".dds")
-            .as_posix()
-            .casefold()
-        )
+        basename = (dds_filename.parent / dds_filename.stem.split(".")[0]).with_suffix(".dds").as_posix().casefold()
         if from_list:
             dds_files = {
-                p.name: _
-                for _ in from_list
-                if (p := Path(_.filename)).as_posix().casefold().startswith(basename)
+                p.name: _ for _ in from_list if (p := Path(_.filename)).as_posix().casefold().startswith(basename)
             }
         else:
-            dds_files = {
-                Path(_.filename).name: _ for _ in dds_file.p4k.search(basename, mode="startswith")
-            }
+            dds_files = {Path(_.filename).name: _ for _ in dds_file.p4k.search(basename, mode="startswith")}
     else:
         dds_filename = Path(dds_file)
         basename = dds_file.parent / dds_file.stem.split(".")[0]
@@ -369,14 +354,8 @@ def collect_and_unsplit(
 
     if isinstance(outfile, Path) and remove:
         if is_glossmap(outfile):
-            [
-                _.unlink(missing_ok=True)
-                for _ in outfile.parent.glob(f'{outfile.name.split(".")[0]}.dds.[0-9]a')
-            ]
+            [_.unlink(missing_ok=True) for _ in outfile.parent.glob(f'{outfile.name.split(".")[0]}.dds.[0-9]a')]
         else:
-            [
-                _.unlink(missing_ok=True)
-                for _ in outfile.parent.glob(f'{outfile.name.split(".")[0]}.dds.[0-9]')
-            ]
+            [_.unlink(missing_ok=True) for _ in outfile.parent.glob(f'{outfile.name.split(".")[0]}.dds.[0-9]')]
 
     return outfile

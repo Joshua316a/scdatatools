@@ -38,17 +38,17 @@ class BlueprintGeometry(dict):
     """
 
     def __init__(
-            self,
-            blueprint: "Blueprint",
-            name,
-            geom_file,
-            pos=None,
-            rotation=None,
-            scale=None,
-            materials=None,
-            attrs=None,
-            helpers=None,
-            parent=None,
+        self,
+        blueprint: "Blueprint",
+        name,
+        geom_file,
+        pos=None,
+        rotation=None,
+        scale=None,
+        materials=None,
+        attrs=None,
+        helpers=None,
+        parent=None,
     ):
         super().__init__()
         self._blueprint = blueprint
@@ -69,26 +69,22 @@ class BlueprintGeometry(dict):
         # ensure material files have the correct suffix
         if not isinstance(mats, (list, tuple, set)):
             mats = [mats]
-        self["materials"].update(
-            Path(mat).with_suffix(".mtl").as_posix().lower() for mat in mats if mat
-        )
+        self["materials"].update(Path(mat).with_suffix(".mtl").as_posix().lower() for mat in mats if mat)
 
     def add_instance(
-            self,
-            name,
-            pos,
-            rotation=None,
-            scale=None,
-            materials=None,
-            attrs=None,
-            soc: dict = None,
+        self,
+        name,
+        pos,
+        rotation=None,
+        scale=None,
+        materials=None,
+        attrs=None,
+        soc: dict = None,
     ):
         if soc is not None:
             inst = soc.setdefault("instances", {}).setdefault(self["name"], {})
         else:
-            inst = self._blueprint.current_container.setdefault("instances", {}).setdefault(
-                self["name"], {}
-            )
+            inst = self._blueprint.current_container.setdefault("instances", {}).setdefault(self["name"], {})
         if not name:
             name = str(len(inst))
         self.add_materials(materials or [])
@@ -120,11 +116,11 @@ class BlueprintGeometry(dict):
 
 class Blueprint:
     def __init__(
-            self,
-            name,
-            sc: "StarCitizen",
-            monitor: typing.Callable = None,
-            convert_cryxml_fmt: CryXmlConversionFormat = "xml",
+        self,
+        name,
+        sc: "StarCitizen",
+        monitor: typing.Callable = None,
+        convert_cryxml_fmt: CryXmlConversionFormat = "xml",
     ):
         """
         Utility for generating a `StarCitizen Blueprint` (`.scbp`) file and extracting required assets for objects
@@ -154,9 +150,9 @@ class Blueprint:
         self.record_geometry = {}
         self.converted_files = {}
 
-        self._entity = None        
+        self._entity = None
         self.entity_geom = ""
-        self.asset_info = {"Starfab version": "0.4.9", "SC version": "unknown"}        
+        self.asset_info = {"Starfab version": "0.4.9", "SC version": "unknown"}
         self.p4k_files = set()
         self._extract_filter = set()
         self.hardpoints = {}
@@ -214,9 +210,7 @@ class Blueprint:
             "bone_names": sorted(_ for _ in self.bone_names if _),
             "hardpoints": self.hardpoints,
             "geometry": {geom: self.geometry[geom] for geom in sorted(self.geometry)},
-            "tint_palettes": []
-            if not self.entity_geom
-            else sorted(self.geometry[self.entity_geom]["tint_palettes"]),
+            "tint_palettes": [] if not self.entity_geom else sorted(self.geometry[self.entity_geom]["tint_palettes"]),
             "containers": self.containers,
         }
 
@@ -279,9 +273,7 @@ class Blueprint:
             self._containers_to_process.setdefault(path, attrs)
             self.add_file_to_extract(path, no_process=True)
 
-    def add_file_to_extract(
-            self, path: typing.Union[str, list, tuple, set, Path], no_process=False
-    ) -> str:
+    def add_file_to_extract(self, path: typing.Union[str, list, tuple, set, Path], no_process=False) -> str:
         """Add an additional file to be extracted from the Data.p4k
 
         :param path: Path (or list of paths) of the file within the `Data.p4k`
@@ -314,17 +306,13 @@ class Blueprint:
                     if not no_process:
                         self._entities_to_process.add(("path", path))
             elif base in self.sc.p4k.BaseNameToInfo:
-                return self.add_file_to_extract(
-                    [_.filename for _ in self.sc.p4k.BaseNameToInfo[base]], no_process
-                )
+                return self.add_file_to_extract([_.filename for _ in self.sc.p4k.BaseNameToInfo[base]], no_process)
             else:
                 if base.endswith("disp"):
                     # a lot of textures miss the 'l' at the end of the file... may as well catch them
                     base += "l"
                     if base in self.sc.p4k.BaseNameToInfo:
-                        return self.add_file_to_extract(
-                            [_.filename for _ in self.sc.p4k.BaseNameToInfo[base]]
-                        )
+                        return self.add_file_to_extract([_.filename for _ in self.sc.p4k.BaseNameToInfo[base]])
                 self.log(f"could not find file in P4K: {path}", logging.WARNING)
                 return ""
         return path
@@ -382,11 +370,11 @@ class Blueprint:
             return load_item_port(self, name, record)
 
     def get_or_create_geom(
-            self,
-            geom_path: typing.Union[str, Path],
-            parent: BlueprintGeometry = None,
-            create_params: dict = None,
-            sub_geometry: dict = None,
+        self,
+        geom_path: typing.Union[str, Path],
+        parent: BlueprintGeometry = None,
+        create_params: dict = None,
+        sub_geometry: dict = None,
     ) -> typing.Tuple[BlueprintGeometry, bool]:
         """
         Gets, or creates, the `BlueprintGeometry` for `geom_path` within the `Blueprint`
@@ -413,11 +401,7 @@ class Blueprint:
         if geom_path.suffix.lower() == ".cdf":
             # parse the cdf and create it's sub_geometry as well
             try:
-                p4k_path = (
-                    (Path("data") / geom_path)
-                    if geom_path.parts[0].lower() != "data"
-                    else geom_path
-                )
+                p4k_path = (Path("data") / geom_path) if geom_path.parts[0].lower() != "data" else geom_path
                 p4k_info = self.sc.p4k.NameToInfoLower[p4k_path.as_posix().lower()]
                 cdf = dict_from_cryxml_file(self.sc.p4k.open(p4k_info))["CharacterDefinition"]
                 geom_path = Path(cdf["Model"]["@File"])
@@ -426,11 +410,7 @@ class Blueprint:
                     attachments = [attachments]  # happens if there is only one attachment
                 # TODO: handle attachment points that don't have geometry (doesn't have a @Binding)
                 sub_geometry.update(
-                    {
-                        _["@Binding"]: {"attrs": {"bone_name": _["@AName"]}}
-                        for _ in attachments
-                        if "@Binding" in _
-                    }
+                    {_["@Binding"]: {"attrs": {"bone_name": _["@AName"]}} for _ in attachments if "@Binding" in _}
                 )
             except KeyError:
                 self.log(f"failed to parse cdf: {geom_path}", logging.ERROR)
@@ -438,9 +418,7 @@ class Blueprint:
 
         if geom_path.suffix.lower() == ".cgf":
             # check to see if there is a cga equivalent, and use that instead
-            test_path = (
-                (Path("data") / geom_path) if geom_path.parts[0].lower() != "data" else geom_path
-            )
+            test_path = (Path("data") / geom_path) if geom_path.parts[0].lower() != "data" else geom_path
             if test_path.with_suffix(".cga").as_posix().lower() in self.sc.p4k.NameToInfoLower:
                 geom_path = geom_path.with_suffix(".cga")
 
@@ -483,9 +461,9 @@ class Blueprint:
         return self.socs[soc_path], True
 
     def geometry_for_record(
-            self,
-            record: typing.Union[DataCoreRecordObject, Record, GUID, str],
-            base: bool = False,
+        self,
+        record: typing.Union[DataCoreRecordObject, Record, GUID, str],
+        base: bool = False,
     ) -> typing.Union[typing.Dict[str, BlueprintGeometry], BlueprintGeometry, None]:
         """Returns all the `BlueprintGeometry`s associated with a given `record`.
 
@@ -506,9 +484,7 @@ class Blueprint:
             guid = record.id.value
         else:
             guid = record
-        self.add_record_to_extract(
-            guid
-        )  # make sure the record has been tracked at least at some point
+        self.add_record_to_extract(guid)  # make sure the record has been tracked at least at some point
         if guid not in self.record_geometry:
             from scdatatools.sc.blueprints.processors.datacore import (
                 process_geometry_resource_params,
@@ -517,11 +493,7 @@ class Blueprint:
             record = self.sc.datacore.records_by_guid[guid]
             try:
                 geom_component = next(
-                    iter(
-                        _
-                        for _ in record.properties["Components"]
-                        if _.type == "SGeometryResourceParams"
-                    )
+                    iter(_ for _ in record.properties["Components"] if _.type == "SGeometryResourceParams")
                 )
                 process_geometry_resource_params(self, geom_component, record)
                 # ent_pro = ('record', guid)
@@ -533,7 +505,7 @@ class Blueprint:
         if base and geom:
             if "" in geom:
                 return next(iter(geom[""]))
-            logger.warning(f"TODO: figure out missing base geometry situation")
+            logger.warning("TODO: figure out missing base geometry situation")
             return None  # TODO: figure out what causes this situation
         return geom
 
@@ -576,9 +548,9 @@ class Blueprint:
             if isinstance(container, str):
                 if "." in container:
                     container, sub = container.split(".", maxsplit=1)
-                    self.current_container = previous_container.setdefault(
-                        "containers", {}
-                    ).setdefault(container, self._empty_container(attrs))
+                    self.current_container = previous_container.setdefault("containers", {}).setdefault(
+                        container, self._empty_container(attrs)
+                    )
                     with self.set_current_container(sub) as cont:
                         yield cont
                     return
@@ -594,9 +566,7 @@ class Blueprint:
 
     def _process_record(self, record_guid, *args, **kwargs):
         try:
-            process_datacore_object(
-                self, self.sc.datacore.records_by_guid[record_guid], *args, **kwargs
-            )
+            process_datacore_object(self, self.sc.datacore.records_by_guid[record_guid], *args, **kwargs)
         except Exception as e:
             self.log(f"processing record {record_guid}: {e}", logging.ERROR, exc_info=e)
             raise
@@ -636,18 +606,12 @@ class Blueprint:
 
             self._entities_to_process = set()
             for ent_type, entity in cur_entities_to_process:
-                sentry_sdk.set_context(
-                    "blueprint.processing", {"entity_type": ent_type, "entity": entity}
-                )
+                sentry_sdk.set_context("blueprint.processing", {"entity_type": ent_type, "entity": entity})
                 if ent_type == "record":
                     with self.set_current_container(self._container_for_record[entity]):
-                        self._process_record(
-                            entity
-                        )  # processed records can add more records to process
+                        self._process_record(entity)  # processed records can add more records to process
                 else:
                     with self.set_current_container(self._container_for_path[entity]):
-                        self._process_p4k_file(
-                            entity
-                        )  # processed files could add more files to process
+                        self._process_p4k_file(entity)  # processed files could add more files to process
             self._processed_entities |= cur_entities_to_process
             limit_processing -= 1

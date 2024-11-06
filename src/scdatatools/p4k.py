@@ -19,7 +19,7 @@ from scdatatools.utils import norm_path
 logger = logging.getLogger(__name__)
 ZIP_ZSTD = 100
 p4kFileHeader = b"PK\x03\x14"
-DEFAULT_P4K_KEY = b"\x5E\x7A\x20\x02\x30\x2E\xEB\x1A\x3B\xB6\x17\xC3\x0F\xDE\x1E\x47"
+DEFAULT_P4K_KEY = b"\x5e\x7a\x20\x02\x30\x2e\xeb\x1a\x3b\xb6\x17\xc3\x0f\xde\x1e\x47"
 DEFAULT_CRYXML_CONVERT_FMT = "xml"
 
 compressor_names = zipfile.compressor_names
@@ -228,7 +228,7 @@ class P4KFile(zipfile.ZipFile):
     def _update_file_tree(self):
         for path in self.filelist:
             parent = self.file_tree
-            for part in path.filename.split('/'):
+            for part in path.filename.split("/"):
                 parent = parent.setdefault(part, {})
 
     def expand_subarchives(self):
@@ -286,9 +286,7 @@ class P4KFile(zipfile.ZipFile):
             self.filelist.append(x)
             self.NameToInfo[x.filename] = x
             self.NameToInfoLower[x.filename.casefold()] = x
-            self.BaseNameToInfo.setdefault(
-                x.filename.split(".", maxsplit=1)[0].casefold(), []
-            ).append(x)
+            self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
 
     def _RealGetContents(self):
         """Read in the table of contents for the ZIP file."""
@@ -370,9 +368,7 @@ class P4KFile(zipfile.ZipFile):
             self.filelist.append(x)
             self.NameToInfo[x.filename] = x
             self.NameToInfoLower[x.filename.casefold()] = x
-            self.BaseNameToInfo.setdefault(
-                x.filename.split(".", maxsplit=1)[0].casefold(), []
-            ).append(x)
+            self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
 
             # Add sub-archives to be opened later (.pak/.sockpak,etc)
             file_ext = x.filename.split(".", maxsplit=1)[-1]
@@ -558,27 +554,17 @@ class P4KFile(zipfile.ZipFile):
             return [info for fn, info in walk_items() if r.match(fn) and not in_exclude(fn)]
         elif mode == "startswith":
             return [
-                info
-                for fn, info in walk_items()
-                if any(fn.startswith(_) for _ in file_filters) and fn not in exclude
+                info for fn, info in walk_items() if any(fn.startswith(_) for _ in file_filters) and fn not in exclude
             ]
         elif mode == "endswith":
             return [
-                info
-                for fn, info in walk_items()
-                if any(fn.endswith(_) for _ in file_filters) and fn not in exclude
+                info for fn, info in walk_items() if any(fn.endswith(_) for _ in file_filters) and fn not in exclude
             ]
         elif mode == "in":
-            return [
-                info
-                for fn, info in walk_items()
-                if any(_ in fn for _ in file_filters) and fn not in exclude
-            ]
+            return [info for fn, info in walk_items() if any(_ in fn for _ in file_filters) and fn not in exclude]
         elif mode == "in_strip":
             return [
-                info
-                for fn, info in walk_items()
-                if fn.split(".", maxsplit=1)[0] in file_filters and fn not in exclude
+                info for fn, info in walk_items() if fn.split(".", maxsplit=1)[0] in file_filters and fn not in exclude
             ]
 
         raise AttributeError(f"Invalid search mode: {mode}")
@@ -791,9 +777,7 @@ class _ZipFileWithFlexibleFilenames(zipfile.ZipFile):
                 if not pwd:
                     pwd = self.pwd
                 if not pwd:
-                    raise RuntimeError(
-                        "File %r is encrypted, password " "required for extraction" % name
-                    )
+                    raise RuntimeError("File %r is encrypted, password " "required for extraction" % name)
             else:
                 pwd = None
 

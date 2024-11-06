@@ -38,11 +38,11 @@ class localization:
         languages = languages or [sc.localization.default_language]
 
         translations = []
-        for l in languages:
-            l = l.casefold()
-            if l not in sc.localization.languages:
+        for lang in languages:
+            lang = lang.casefold()
+            if lang not in sc.localization.languages:
                 continue
-            translations.append(sc.localization.gettext(text, language=l, default_response=""))
+            translations.append(sc.localization.gettext(text, language=lang, default_response=""))
 
         if len(translations) == 1:
             print(translations[0])
@@ -98,7 +98,7 @@ class localization:
 
         filter = re.compile(filter.casefold()) if filter else None
         for k in sc.localization.keys:
-            row = [k] + [sc.localization.gettext(k, l, "") for l in selected_languages]
+            row = [k] + [sc.localization.gettext(k, lang, "") for lang in selected_languages]
             if filter is None or filter.search("".join(row).casefold()):
                 t.add_row(*row)
         get_console().print(t)
@@ -149,7 +149,7 @@ class localization:
             for k in track(sc.localization.keys, description="Exporting translation"):
                 row = dict(
                     **{"key": k},
-                    **{l: sc.localization.gettext(k, l, "") for l in selected_languages},
+                    **{lang: sc.localization.gettext(k, lang, "") for lang in selected_languages},
                 )
                 if filter is None or filter.search(str(row).casefold()):
                     writer.writerow(row)

@@ -1,6 +1,7 @@
 import ctypes
 import struct
 
+from scdatatools.forge.dftypes import GUID
 from scdatatools.wwise.defs.bnk.hirc import HIRC_SIGNATURE, HIRCHeader
 
 BNK_SIGNATURE = b"BKHD"
@@ -11,21 +12,6 @@ INIT_SIGNATURE = b"INIT"
 STMG_SIGNATURE = b"STMG"
 ENVS_SIGNATURE = b"ENVS"
 PLAT_SIGNATURE = b"PLAT"
-
-
-class GUID(ctypes.LittleEndianStructure):
-    _fields_ = [("raw_guid", ctypes.c_byte * 16)]
-
-    @property
-    def value(self):
-        c, b, a, k, j, i, h, g, f, e, d = struct.unpack("<HHI8B", self.raw_guid)
-        return f"{a:08x}-{b:04x}-{c:04x}-{d:02x}{e:02x}-{f:02x}{g:02x}{h:02x}{i:02x}{j:02x}{k:02x}"
-
-    def __repr__(self):
-        return f"<GUID: {self.value}>"
-
-    def __str__(self):
-        return self.value
 
 
 class BNKHeader(ctypes.LittleEndianStructure):
@@ -58,15 +44,11 @@ class DIDXHeader(ctypes.LittleEndianStructure):
         didx.wem_hdrs = []
         num_wems = didx.length // ctypes.sizeof(DIDXWemRecord)
         for i in range(num_wems):
-            didx.wem_hdrs.append(
-                DIDXWemRecord.from_buffer(source, offset + 8 + (i * ctypes.sizeof(DIDXWemRecord)))
-            )
+            didx.wem_hdrs.append(DIDXWemRecord.from_buffer(source, offset + 8 + (i * ctypes.sizeof(DIDXWemRecord))))
         return didx
 
     def calculated_size(self):
-        return ctypes.sizeof(DIDXHeader) + ctypes.sizeof(DIDXWemRecord) * len(
-            getattr(self, "wem_hdrs", [])
-        )
+        return ctypes.sizeof(DIDXHeader) + ctypes.sizeof(DIDXWemRecord) * len(getattr(self, "wem_hdrs", []))
 
 
 class DATAHeader(ctypes.LittleEndianStructure):
@@ -112,9 +94,7 @@ class STIDSoundBankHeader(ctypes.LittleEndianStructure):
     def from_buffer(cls, source, offset=0):
         hdr = type(cls).from_buffer(cls, source, offset)
         hdr.length = ctypes.sizeof(cls) + hdr.name_length
-        hdr.name = source[
-            offset + ctypes.sizeof(cls) : offset + ctypes.sizeof(cls) + hdr.name_length
-        ].decode("utf-8")
+        hdr.name = source[offset + ctypes.sizeof(cls) : offset + ctypes.sizeof(cls) + hdr.name_length].decode("utf-8")
         return hdr
 
 

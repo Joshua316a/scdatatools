@@ -52,7 +52,7 @@ class DataCoreBinary:
         elif isinstance(filename_or_data, P4KExtFile):
             self.raw_data = bytearray(filename_or_data.read())
         elif isinstance(filename_or_data, P4KFile) or isinstance(filename_or_data, Path):
-            self.raw_data = bytearray(filename_or_data.open('rb').read())
+            self.raw_data = bytearray(filename_or_data.open("rb").read())
         elif isinstance(filename_or_data, str):
             filename = Path(filename_or_data)
             if not filename.is_file():
@@ -77,12 +77,8 @@ class DataCoreBinary:
         self.structure_definitions = _read_and_seek(
             dftypes.StructureDefinition * self.header.structure_definition_count
         )
-        self.property_definitions = _read_and_seek(
-            dftypes.PropertyDefinition * self.header.property_definition_count
-        )
-        self.enum_definitions = _read_and_seek(
-            dftypes.EnumDefinition * self.header.enum_definition_count
-        )
+        self.property_definitions = _read_and_seek(dftypes.PropertyDefinition * self.header.property_definition_count)
+        self.enum_definitions = _read_and_seek(dftypes.EnumDefinition * self.header.enum_definition_count)
         if self.header.version >= 5:
             self.data_mapping_definitions = _read_and_seek(
                 dftypes.DataMappingDefinition32 * self.header.data_mapping_definition_count
@@ -108,16 +104,10 @@ class DataCoreBinary:
             DataTypes.StringRef: _read_and_seek(dftypes.StringReference * self.header.string_count),
             DataTypes.Locale: _read_and_seek(dftypes.LocaleReference * self.header.locale_count),
             DataTypes.EnumChoice: _read_and_seek(dftypes.EnumChoice * self.header.enum_count),
-            DataTypes.StrongPointer: _read_and_seek(
-                dftypes.StrongPointer * self.header.strong_value_count
-            ),
-            DataTypes.WeakPointer: _read_and_seek(
-                dftypes.WeakPointer * self.header.weak_value_count
-            ),
+            DataTypes.StrongPointer: _read_and_seek(dftypes.StrongPointer * self.header.strong_value_count),
+            DataTypes.WeakPointer: _read_and_seek(dftypes.WeakPointer * self.header.weak_value_count),
             DataTypes.Reference: _read_and_seek(dftypes.Reference * self.header.reference_count),
-            DataTypes.EnumValueName: _read_and_seek(
-                dftypes.StringReference * self.header.enum_option_name_count
-            ),
+            DataTypes.EnumValueName: _read_and_seek(dftypes.StringReference * self.header.enum_option_name_count),
         }
 
         self.text_offset = offset
@@ -164,9 +154,9 @@ class DataCoreBinary:
             dftypes.StructureInstance,
         ):
             offset = self.structure_instances[structure_index][instance]
-            self.structure_instances[structure_index][
-                instance
-            ] = self.get_structure_instance_from_offset(structure_index, offset)
+            self.structure_instances[structure_index][instance] = self.get_structure_instance_from_offset(
+                structure_index, offset
+            )
             # self.structure_instances[structure_index][
             #     instance
             # ] = dftypes.StructureInstance(
@@ -184,22 +174,23 @@ class DataCoreBinary:
         if offset not in self._string_cache:
             try:
                 if offset >= self.header.text_length:
-                    raise IndexError(f'Text offset "{offset}" is out of range of the primary table "{self.header.text_length}"')
+                    raise IndexError(
+                        f'Text offset "{offset}" is out of range of the primary table "{self.header.text_length}"'
+                    )
 
                 end = self.raw_data.obj.index(
                     0x00,
                     self.text_offset + offset,
                     self.text_offset + self.header.text_length,
                 )
-                self._string_cache[offset] = bytes(
-                    self.raw_data[self.text_offset + offset : end]
-                ).decode(encoding)
+                self._string_cache[offset] = bytes(self.raw_data[self.text_offset + offset : end]).decode(encoding)
             except ValueError:
                 sys.stderr.write(f"Invalid string offset: {offset}")
                 return ""
         return self._string_cache[offset]
 
         # Looks up into "records" type strings in the Datacore v6 update. I.e.EntityClassDefinition.FeatureTest_<Whatever_Else_Here>
+
     def string_for_offset2(self, offset: int, encoding="UTF-8") -> str:
         # TODO: This is a really awful way of handling this, but it at least enables the use of Datacore <V6 files
         if self.header.version < 6:
@@ -208,16 +199,16 @@ class DataCoreBinary:
         if offset not in self._string_cache2:
             try:
                 if offset >= self.header.text_length2:
-                    raise IndexError(f'Text offset "{offset}" is out of range of the secondary table "{self.header.text_length2}"')
+                    raise IndexError(
+                        f'Text offset "{offset}" is out of range of the secondary table "{self.header.text_length2}"'
+                    )
 
                 end = self.raw_data.obj.index(
                     0x00,
                     self.text_offset2 + offset,
                     self.text_offset2 + self.header.text_length2,
-                    )
-                self._string_cache2[offset] = bytes(
-                    self.raw_data[self.text_offset2 + offset : end]
-                ).decode(encoding)
+                )
+                self._string_cache2[offset] = bytes(self.raw_data[self.text_offset2 + offset : end]).decode(encoding)
             except ValueError:
                 sys.stderr.write(f"Invalid string offset: {offset}")
                 return ""
@@ -281,8 +272,7 @@ class DataCoreBinary:
 
                 if isinstance(prop, list):
                     base[name] = [
-                        {p.name: _handle_prop(p, p.name)} if hasattr(p, "name") else _handle_prop(p)
-                        for p in prop
+                        {p.name: _handle_prop(p, p.name)} if hasattr(p, "name") else _handle_prop(p) for p in prop
                     ]
                 else:
                     base[name] = _handle_prop(prop, name)
@@ -304,9 +294,7 @@ class DataCoreBinary:
             sort_keys=True,
         )
 
-    def search_filename(
-        self, file_filter, ignore_case=True, mode="fnmatch"
-    ) -> typing.List[dftypes.Record]:
+    def search_filename(self, file_filter, ignore_case=True, mode="fnmatch") -> typing.List[dftypes.Record]:
         """
         Search the datacore for objects by filename.
 
@@ -319,9 +307,7 @@ class DataCoreBinary:
             `in`:   Performs and `in` check - filename in file_filters
         :return: List of :class:`Record` objects that matched the filter
         """
-        file_filter = "/".join(
-            file_filter.split("\\")
-        )  # normalize path slashes from windows to posix
+        file_filter = "/".join(file_filter.split("\\"))  # normalize path slashes from windows to posix
         if ignore_case:
             file_filter = file_filter.lower()
 

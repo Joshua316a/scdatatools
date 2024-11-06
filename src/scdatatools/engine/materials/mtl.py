@@ -41,7 +41,7 @@ class MaterialLibrary:
             if not self.data_dir:
                 self.data_dir = self.mtl_path.parent
                 logger.debugscbp(
-                    f"could not determine data_dir from mtl path. defaulting to mtl directory %s",
+                    "could not determine data_dir from mtl path. defaulting to mtl directory %s",
                     self.data_dir,
                 )
 

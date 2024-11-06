@@ -1,4 +1,4 @@
-from typing import *
+import typing
 
 from rich import progress
 
@@ -60,30 +60,28 @@ class RateColumn(progress.ProgressColumn):
         else:
             unit, suffix = progress.filesize.pick_unit_and_suffix(speed, [""], 1)
         precision = 0 if unit == 1 else 1
-        return progress.Text(
-            f"{speed / unit:,.{precision}f} {suffix}{self.unit}/s", style="progress.data.speed"
-        )
+        return progress.Text(f"{speed / unit:,.{precision}f} {suffix}{self.unit}/s", style="progress.data.speed")
 
 
 def track(
-        sequence: Union[Sequence[progress.ProgressType], Iterable[progress.ProgressType]],
-        description: str = "Working...",
-        total: Optional[float] = None,
-        auto_refresh: bool = True,
-        console: Optional[progress.Console] = None,
-        transient: bool = False,
-        get_time: Optional[Callable[[], float]] = None,
-        refresh_per_second: float = 10,
-        style: progress.StyleType = "bar.back",
-        complete_style: progress.StyleType = "bar.complete",
-        finished_style: progress.StyleType = "bar.finished",
-        pulse_style: progress.StyleType = "bar.pulse",
-        update_period: float = 0.1,
-        disable: bool = False,
-        show_speed: bool = True,
-        unit: str = "i",
-        unit_scale: bool = True,
-) -> Iterable[progress.ProgressType]:
+    sequence: typing.Union[typing.Sequence[progress.ProgressType], typing.Iterable[progress.ProgressType]],
+    description: str = "Working...",
+    total: typing.Optional[float] = None,
+    auto_refresh: bool = True,
+    console: typing.Optional[progress.Console] = None,
+    transient: bool = False,
+    get_time: typing.Optional[typing.Callable[[], float]] = None,
+    refresh_per_second: float = 10,
+    style: progress.StyleType = "bar.back",
+    complete_style: progress.StyleType = "bar.complete",
+    finished_style: progress.StyleType = "bar.finished",
+    pulse_style: progress.StyleType = "bar.pulse",
+    update_period: float = 0.1,
+    disable: bool = False,
+    show_speed: bool = True,
+    unit: str = "i",
+    unit_scale: bool = True,
+) -> typing.Iterable[progress.ProgressType]:
     """Track progress by iterating over a sequence.
 
     Args:
@@ -107,10 +105,8 @@ def track(
 
     """
 
-    columns: List["ProgressColumn"] = [] if IN_BLENDER else [progress.SpinnerColumn()]
-    columns.extend(
-        [progress.TextColumn("[progress.description]{task.description}")] if description else []
-    )
+    columns: typing.List["ProgressColumn"] = [] if IN_BLENDER else [progress.SpinnerColumn()]
+    columns.extend([progress.TextColumn("[progress.description]{task.description}")] if description else [])
     columns.extend(
         (
             progress.BarColumn(
@@ -138,6 +134,4 @@ def track(
     )
 
     with p:
-        yield from p.track(
-            sequence, total=total, description=description, update_period=update_period
-        )
+        yield from p.track(sequence, total=total, description=description, update_period=update_period)

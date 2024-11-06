@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 PREFAB_OBJECT_TYPES_TO_PROCESS = {
     "AreaBox",
     "Brush",
-    "Decal",    
+    "Decal",
     "GeomEntity",
     "Group",
     "Ledge",
@@ -30,14 +30,14 @@ PREFAB_OBJECT_TYPES_TO_PROCESS = {
     "ProceduralLayoutConnector",
     "ProceduralLayoutElementInfoBox",
     "ProceduralLayoutSecondaryElement",
-    "Shape"
+    "Shape",
     # Ignored Types
     # 'AudioAreaAmbience', 'AudioTriggerSpot', "Designer", 'EnvironmentProbe', 'PrefabPivot', 'ParticleEffect', 'VisArea'
 }
 PREFAB_ENTITY_TYPES_TO_PROCESS = {
     "Light",
     "ObjectContainer",
-    "Room"
+    "Room",
     # Ignored Types
     # 'Ht_D_Int_Door_Double_A', 'FogVolume', 'GoToPointEntity', 'GravityBox', 'Railing_Straight_4m_Lowtech_Open',
 }
@@ -118,13 +118,10 @@ class Prefab:
                 if (ot := obj["type"]) in PREFAB_OBJECT_TYPES_TO_PROCESS:
                     if ot == "Prefab":
                         prefab_library = obj.get("prefab_name", "").split(".", maxsplit=1)[0]
-                        if (
-                            prefab := self.manager.prefab_for_id(obj["prefab_guid"], prefab_library)
-                        ) is not None:
+                        if (prefab := self.manager.prefab_for_id(obj["prefab_guid"], prefab_library)) is not None:
                             yield from prefab.objects_with_geometry(
                                 pos_offset=pos_off + vector_from_csv(obj.get("pos", "0,0,0")),
-                                rotation_offset=rot_off
-                                * quaternion_from_csv(obj.get("rotate", "1,0,0,0")),
+                                rotation_offset=rot_off * quaternion_from_csv(obj.get("rotate", "1,0,0,0")),
                             )
                     elif ot == "Brush":
                         yield {
@@ -285,9 +282,7 @@ class PrefabManager:
         if not isinstance(prefab, P4KInfo):
             prefab = self.sc.p4k.getinfo(prefab)
 
-        prefab_name = norm_path(
-            prefab.filename.replace("Data/Prefabs/", "").replace(".xml", "").lower()
-        )
+        prefab_name = norm_path(prefab.filename.replace("Data/Prefabs/", "").replace(".xml", "").lower())
         if prefab_name not in self.libraries:
             lib = PrefabLibrary.from_prefab_cryxml(self, prefab.open())
             if lib is not None:

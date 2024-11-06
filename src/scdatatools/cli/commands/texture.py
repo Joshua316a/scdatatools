@@ -19,9 +19,7 @@ from scdatatools.utils import NamedBytesIO
 class Tex:
     """Texture processing commands"""
 
-    @command(
-        help="Recombine split DDS texture files (dds.N). This will attempt to locate the DDS pieces."
-    )
+    @command(help="Recombine split DDS texture files (dds.N). This will attempt to locate the DDS pieces.")
     @argument(
         "dds_files",
         description="DDS file to recombine. Split pieces will be found automatically. Directories "
@@ -122,8 +120,7 @@ class Tex:
             converter_bin = shutil.which(converter_bin)
         if not os.path.isfile(converter_bin):
             sys.stderr.write(
-                f"Could not determine which image converter to use. texconv or compressonatorcli is "
-                f"required"
+                "Could not determine which image converter to use. texconv or compressonatorcli is " "required"
             )
             sys.exit(1)
 

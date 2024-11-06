@@ -25,9 +25,7 @@ class ChunkType(IntEnum):
     BoneLightBinding = (0x1010,)
     MeshMorphTarget = (0x1011,)
     BoneInitialPos = (0x1012,)
-    SourceInfo = (
-        0x1013,
-    )  # Describes the source from which the cgf was exported: source max file, machine and user.
+    SourceInfo = (0x1013,)  # Describes the source from which the cgf was exported: source max file, machine and user.
     MtlName = (0x1014,)  # provides material name as used in the material.xml file
     ExportFlags = (0x1015,)  # Describes export information
     DataStream = (0x1016,)  # A data stream
@@ -46,31 +44,17 @@ class ChunkType(IntEnum):
     CryXMLB = (0x0004,)
     JSON = (0x0011,)
 
-    UnknownSC1 = (
-        0x3004,
-    )  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
-    UnknownSC2 = (
-        0x0002,
-    )  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
+    UnknownSC1 = (0x3004,)  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
+    UnknownSC2 = (0x0002,)  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
 
     # https://github.com/dymek91/Exporting-Toolkit/blob/master/shipsExporter/CryEngine/ChCr/SCOC/Chunk_AreaShape.cs
-    AreaShape = (
-        0x000E,
-    )  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
+    AreaShape = (0x000E,)  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
 
     # https://github.com/dymek91/Exporting-Toolkit/blob/master/shipsExporter/CryEngine/ChCr/SCOC/Chunk_Objects.cs
-    IncludedObjects = (
-        0x0010,
-    )  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
-    UnknownSC5 = (
-        0x0008,
-    )  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
-    UnknownSC6 = (
-        0x300A,
-    )  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
-    UnknownSC7 = (
-        0x4002,
-    )  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
+    IncludedObjects = (0x0010,)  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
+    UnknownSC5 = (0x0008,)  # 'data/objectcontainers/ships/aegs/javelin/base_int_hab_main/base_int_hab_main.soc'
+    UnknownSC6 = (0x300A,)  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
+    UnknownSC7 = (0x4002,)  # 'data/objects/spaceships/ships/aegs/javelin/exteriors/aegs_javelin.cga'
     UnknownSC8 = (0x3005,)  # Data\Objects\planets\flora\bush\bayberry_01\bayberry_01.cgfm: 12293
     UnknownSC9 = (0x0013,)
     UnknownSC10 = (0x0014,)
@@ -88,9 +72,7 @@ class ChunkType(IntEnum):
     DBA_Skeleton = 0x0000300D
     DBAData = 0x194FBC50
     DBA = 0xF7351608  # is checked against -0x8cae9f8 in code
-    DBA_UNKNOWN1 = (
-        0x322BA3C7  # found in Data\Animations\Characters\Human\female_v2\force_reactions.dba
-    )
+    DBA_UNKNOWN1 = 0x322BA3C7  # found in Data\Animations\Characters\Human\female_v2\force_reactions.dba
 
     # From  IVO_Loader2? handles AIM files, .caf?
     AIM_Skeleton = 0x1BBC4103
@@ -113,6 +95,14 @@ class ChunkType(IntEnum):
     Character_SkinInfo_320 = 0x9291
     Character_SkinMesh = 0xB875  # B2D9
     Character_Skeleton = 0xC201  # 973C  # CompiledBones
+
+    # 3.24
+    UnknownSC324_1 = 0xBE5E
+    UnknownSC324_2 = 0x9351
+    UnknownSC324_3 = 0x58DE
+    UnknownSC324_4 = 0x7069
+    UnknownSC324_5 = 0x2B7E
+
     # endregion
     ###################################################################################################################
 
@@ -124,7 +114,7 @@ CHUNK_FILE_HEADER_CLASSES = {}
 
 def chunk_handler(chunk_type: ChunkType, versions: typing.List[int] = None):
     if versions is None:
-        versions = ['any']
+        versions = ["any"]
 
     def do_register(chunk_class):
         for version in versions:

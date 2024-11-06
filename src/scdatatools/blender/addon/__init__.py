@@ -77,7 +77,7 @@ def register():
                 stderrToServer=True,
             )
         except ModuleNotFoundError:
-            print(f"Module pydevd_pycharm, install to enable remote debugging")
+            print("Module pydevd_pycharm, install to enable remote debugging")
         except Exception as e:
             print(f"Could not connect to pycharm debugger: {repr(e)}")
     if (vscode_debug_port := int(os.environ.get("SCDT_VSCODE_DEBUG", 0))) > 0:
