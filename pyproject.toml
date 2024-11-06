@@ -16,21 +16,21 @@ keywords= ["scdatatools","star citizen", "CIG", "cloud imperium games", "squadro
 #]
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "fnvhash>=0.1.0",
-    "hexdump>=3.3",
-    "humanize>=4.11.0",
+    "fnvhash~=0.1.0",
+    "hexdump~=3.3",
+    "humanize~=4.11.0",
     "numpy==1.24.3",
-    "packaging>=24.1",
-    "pillow>=11.0.0",
-    "pycryptodome>=3.21.0",
-    "pynubia>=0.3.0",
-    "pyquaternion>=0.9.9",
-    "pyrsi>=0.1.19",
-    "rich>=13.9.4",
-    "sentry-sdk>=2.18.0",
-    "tqdm>=4.66.6",
-    "xxhash>=3.5.0",
-    "zstandard>=0.23.0",
+    "packaging~=24.1",
+    "pillow~=11.0.0",
+    "pycryptodome~=3.21.0",
+    "pynubia~=0.3.0",
+    "pyquaternion~=0.9.9",
+    "pyrsi~=0.1.19",
+    "rich~=13.9.4",
+    "sentry-sdk~=2.18.0",
+    "tqdm~=4.66.6",
+    "xxhash~=3.5.0",
+    "zstandard~=0.23.0",
 ]
 
 [build-system]
@@ -39,6 +39,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "ipython>=8.29.0",
     "ruff>=0.7.2",
 ]
 
