@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import sys
 from pathlib import Path
 
@@ -250,18 +251,56 @@ class StarCitizen:
         self._p4k = p4k_file
         self._is_loaded["p4k"] = True
 
-    def _get_cached_file(self, name):
+    def _get_cached_file(self, name) -> Path | None:
         if self.cache_dir is not None:
             if (cache_file := self.cache_dir / name).is_file():
                 logger.debug(f"Using cached file for {name}: {cache_file}")
                 return cache_file
         return None
 
+    def _dcb_regex(self, filename: str) -> int:
+        match = re.search(r"\d+", filename)
+        return int(match.group()) if match else 0
+
+    def _get_cached_datacore(self) -> Path | None:
+        # In an ideal world, I wouldn't have to worry about there being
+        # multiple datacores in the file cache... However, since I don't
+        # trust it, we're going to handle that case anyway.
+        if self.cache_dir is None:
+            return None
+
+        cached_datacores = [
+            filename for filename in self.cache_dir.iterdir()
+            if filename.is_file() and filename.match("Game*.dcb")
+        ]
+
+        if not cached_datacores:
+            return None
+
+        cached_datacores.sort(
+            key=lambda f: self._dcb_regex(str(f.name)),
+            reverse=True
+        )
+
+        return cached_datacores[0]
+
     @property
     def datacore(self):
         if self._datacore is None:
-            if (dcb := self._get_cached_file("Game.dcb")) is None:
-                dcb = self.p4k.getinfo("Data/Game.dcb")
+            if (dcb := self._get_cached_datacore()) is None:
+                # TODO: The following is an awful hack to basically attempt to bruteforce our way into handling
+                #       as many varieties of Game.dcb files as possible. I could have just had it check then arbitrarily
+                #       use Game2.dcb, but I worry about the potential inclusion of more in the future, so for now it
+                #       defaults to the greatest value N in a GameN.dcb pattern. We need to come up with a better way of
+                #       handling this, either by unioning all the found datacores in the P4K into a single set of records,
+                #       or by exposing the ability to use any one of the datacore files independently, and leaving it
+                #       to the user to determine which they want to use.
+                datacores = self.p4k.search("Data/Game*.dcb")
+                datacores.sort(
+                    key=lambda f: self._dcb_regex(f.filename),
+                    reverse=True
+                )
+                dcb = datacores[0]
                 if self.cache_dir:
                     logger.debug(f"Saving datacore cache to {self.cache_dir}")
                     self.p4k.extract(dcb, path=self.cache_dir, save_to=True, monitor=None)
