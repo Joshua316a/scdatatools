@@ -43,7 +43,7 @@ def chunk_class_from_header(chunk_header: ChunkHeader, fallback=Chunk) -> typing
         if "any" in chunk_version_handlers:
             version = "any"
         else:
-            logger.debug(f"Unhandled chunk version {chunk_header}")
+            logger.error(f"Unhandled chunk version {chunk_header}")
             return fallback
     return chunk_version_handlers[version]
 

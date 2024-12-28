@@ -1,3 +1,4 @@
+import line_profiler
 import fnmatch
 import io
 import logging
@@ -288,6 +289,7 @@ class P4KFile(zipfile.ZipFile):
             self.NameToInfoLower[x.filename.casefold()] = x
             self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
 
+    @line_profiler.profile
     def _RealGetContents(self):
         """Read in the table of contents for the ZIP file."""
         fp = self.fp

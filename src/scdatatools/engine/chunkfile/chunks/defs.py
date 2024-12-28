@@ -98,10 +98,21 @@ class ChunkType(IntEnum):
 
     # 3.24
     UnknownSC324_1 = 0xBE5E
-    UnknownSC324_2 = 0x9351
-    UnknownSC324_3 = 0x58DE
-    UnknownSC324_4 = 0x7069
-    UnknownSC324_5 = 0x2B7E
+    U3_LODDistance = 0x9351  # 1405e9203(CGF), v900h
+    U6_StatObj_Physics = 0x58DE
+    U5_SubObjs = 0x7069
+    U7_PositionBonemap = 0x2B7E
+
+    U4_VisibilityGroups = 0xC1C3  # 1405e921b(CGF), v900h
+    U8_VFXHelpers = 0x1E14  # 1405e8e45(CGF), v900h
+    RBF = 0xA716  # 1405e8a5b(CHR), v900h
+    U9_RigLogic = 0x0A24  # 1405e9415(SKIN), v900h
+    U10_SimTopology = 0x2B8A # 1405e9421(SKIN), v900h
+    U11_RigInfo = 0x7E03  # 1405e942d(SKIN), v900h
+    U12_ProtosInfo = 0xF708  # 1405e963a(SKIN), v900h
+    U13_BShapesGPU = 0x57A3  # 1405e9863(SKINM), v900h
+    U14_SimDeformation = 0xFF27  # 1405e987b(SKINM), v900h
+    U15_VisAreas = 0xB324  # 1405e8c93(SKINM2), v900h
 
     # endregion
     ###################################################################################################################

@@ -157,6 +157,7 @@ class GeometryChunkFile(ChunkFile):
         self.mesh_component = None
         self.skeleton = {}
         self.joints = []
+        self._901 = False
 
         self._data = data_root
         if self._data is None and self._p4kinfo is not None:
@@ -189,6 +190,32 @@ class GeometryChunkFile(ChunkFile):
                         self._root_node_names.remove(chunk.name)
                         self._root_node_names.append(new_name)
                 self.nodes[chunk.name] = chunk
+            elif chunk.chunk_type == ChunkType.Character_Skeleton and chunk.chunk_header.version in [0x901]:
+                self._901 = True
+                bones_forest_id = {}
+                subobj_mapping = {}
+                for i in range(len(chunk.joints)):
+                    bones_forest_id.setdefault(chunk.joints[i].parent_id, []).append(i)
+                    if chunk.joints[i].subobj_id not in subobj_mapping:
+                        subobj_mapping[chunk.joints[i].subobj_id] = i
+                    chunk.joints[i].bone_id = i
+
+                def recurse_resolve(node_id: int, parent_id: int):
+                    node = chunk.joints[node_id]
+                    if node.controller_name not in self.nodes:
+                        self.nodes[node.controller_name] = node
+                    if parent_id != -1:
+                        node.parent = chunk.joints[parent_id]
+                        chunk.joints[parent_id].children.append(node)
+                    else:
+                        self._root_node_names.append(node.controller_name)
+                    if node_id in bones_forest_id:
+                        for x in bones_forest_id[node_id]:
+                            recurse_resolve(x, node_id)
+                    return
+
+                root_bone = bones_forest_id[-1][0]
+                recurse_resolve(root_bone, -1)
 
         if auto_load_mesh:
             self.load_mesh_file()  # must be done _after_ loading the primary chunks
@@ -233,9 +260,10 @@ class GeometryChunkFile(ChunkFile):
                     elif chunk.parent_id == -1 and chunk.name not in self._root_node_names:
                         self._root_node_names.append(chunk.name)
 
-        # resolve node children now that we've merged the two geom files
-        for node in self.nodes.values():
-            node.children = [self.nodes[child] for child in node.children]
+        if not self._901:
+            # resolve node children now that we've merged the two geom files
+            for node in self.nodes.values():
+                node.children = [self.nodes[child] for child in node.children]
 
     @property
     def root_nodes(self):

@@ -32,7 +32,7 @@ class IvoChunkHeader(ChunkHeader):
     _fields_ = [
         ("id", ctypes.c_uint16),
         ("type", ctypes.c_uint16),
-        ("ivo_version", ctypes.c_uint32),
+        ("version", ctypes.c_uint32),
         ("offset", ctypes.c_uint64),
     ]
     _map = {"type": defs.ChunkType}
