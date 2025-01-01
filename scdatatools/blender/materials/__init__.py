@@ -733,7 +733,8 @@ class MTLLoader:
         # shadergroup.inputs["Emissive"].default_value = make_tuple(mtl_attrs["Emissive"] + ",1")
         try:
             shadergroup.inputs["Glow"].default_value = float(
-                mtl_attrs.get("Glow", 0)) * pow (2,4)
+                mtl_attrs.get("Glow", 0)
+            )
         except:
             pass
         try:
