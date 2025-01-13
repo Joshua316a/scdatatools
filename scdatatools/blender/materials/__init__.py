@@ -300,8 +300,9 @@ class MTLLoader:
             if "_link" in matname.lower():
                 shadergroup.inputs["geom link"].default_value = 1            
         elif "%DECAL" in mtl_attrs["StringGenMask"]  or "decal" in matname.lower():
-            shadergroup.node_tree = bpy.data.node_groups["_Illum.decal"]
+            shadergroup.node_tree = bpy.data.node_groups["_Illum"]
             shadergroup.inputs["diff Alpha"].default_value = 0
+            shadergroup.inputs["UseAlpha"].default_value = 1
             viewport_trans = True
         elif "rtt_text_to_decal" in matname.lower():
             shadergroup.node_tree = bpy.data.node_groups["_Illum.decal"]
