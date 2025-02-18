@@ -97,7 +97,7 @@ def a_to_c(attrs, alpha=1.0):
     return r, g, b, alpha
 
 
-def getsRGBColor(c):
+def getsRGBColor(c): 
     r, g, b, a = make_tuple(c)
     x = color_srgb_to_scene_linear(r)
     y = color_srgb_to_scene_linear(g)
@@ -900,7 +900,7 @@ class MTLLoader:
                     mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["diff Alpha"])
                 elif node.name in ["TexSlot2"]:
                     mat.links.new(imagenodecolorout, mat.nodes["Tint"].inputs["ddna Color"])
-                    mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["ddna Alpha"])
+                    #mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["ddna Alpha"])
                 elif node.name == "TexSlot3" or node.name == "TexSlot2A":
                     mat.links.new(imagenodecolorout, mat.nodes["Tint"].inputs["ddna Alpha"])
                 elif node.name in ["TexSlot6", "_spec"]:
