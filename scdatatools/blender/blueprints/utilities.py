@@ -153,6 +153,21 @@ class MakeInstanceHierarchyReal(Operator):
             bpy.ops.object.duplicates_make_real(use_base_parent=True, use_hierarchy=True)
         return {"FINISHED"}
 
+class ConvertTrisToQuads(Operator):
+    """converts faces from tris to quads"""
+
+    bl_idname = "scdt.convert_tris_to_quads"
+    bl_label = "Converts Tris to Quads"
+
+    def execute(self, context):
+        for obj in track(list(context.selected_objects), description="Convert tris to quads"):
+            if obj.type is 'MESH':
+                bpy.context.object.mode = 'EDIT'
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.tris_convert_to_quads()
+                bpy.context.object.mode = 'OBJECT'
+        return {"FINISHED"}
+
 
 class FixBonesPosition(Operator):
     """Fix bones position of .chr part with .skin informations"""
@@ -176,6 +191,7 @@ def register():
     bpy.utils.register_class(FixBonesPosition)
     bpy.utils.register_class(MakeInstanceReal)
     bpy.utils.register_class(MakeInstanceHierarchyReal)
+    bpy.utils.register_class(ConvertTrisToQuads)
     bpy.utils.register_class(IsolateSourceCollection)
 
 
@@ -188,4 +204,5 @@ def unregister():
     bpy.utils.unregister_class(FixBonesPosition)
     bpy.utils.unregister_class(MakeInstanceReal)
     bpy.utils.unregister_class(MakeInstanceHierarchyReal)
+    bpy.utils.register_class(ConvertTrisToQuads)
     bpy.utils.unregister_class(IsolateSourceCollection)
