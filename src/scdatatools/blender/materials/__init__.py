@@ -109,7 +109,7 @@ def getsRGBColor(c):
     return x, y, z, a
 
 
-def color_srgb_to_scene_linear(c, gamma=2.4):
+def color_srgb_to_scene_linear(c, gamma=2.2):
     # c *= 2.2
     if c < 0.04045:
         return 0.0 if c < 0.0 else c * (1.0 / 12.92)
