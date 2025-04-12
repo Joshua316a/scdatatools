@@ -101,7 +101,7 @@ def a_to_c(attrs, alpha=1.0):
     return r, g, b, alpha
 
 
-def getsRGBColor(c): 
+def getsRGBColor(c):
     r, g, b, a = make_tuple(c)
     x = color_srgb_to_scene_linear(r)
     y = color_srgb_to_scene_linear(g)
@@ -301,7 +301,6 @@ class MTLLoader:
         elif "%DECAL" in mtl_attrs["StringGenMask"] or "decal" in matname.lower():
             shadergroup.node_tree = bpy.data.node_groups["_Illum.decal"]
             shadergroup.inputs["diff Alpha"].default_value = 0
-            shadergroup.inputs["UseAlpha"].default_value = 1
             viewport_trans = True
         elif "rtt_text_to_decal" in matname.lower():
             shadergroup.node_tree = bpy.data.node_groups["_Illum.decal"]
@@ -845,7 +844,7 @@ class MTLLoader:
                     mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["diff Alpha"])
                 elif node.name in ["TexSlot2"]:
                     mat.links.new(imagenodecolorout, mat.nodes["Tint"].inputs["ddna Color"])
-                    #mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["ddna Alpha"])
+                    mat.links.new(imagenodealphaout, mat.nodes["Tint"].inputs["ddna Alpha"])
                 elif node.name == "TexSlot3" or node.name == "TexSlot2A":
                     mat.links.new(imagenodecolorout, mat.nodes["Tint"].inputs["ddna Alpha"])
                 elif node.name in ["TexSlot6", "_spec"]:
