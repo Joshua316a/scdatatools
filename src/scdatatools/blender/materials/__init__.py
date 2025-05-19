@@ -1149,7 +1149,7 @@ class MTLLoader:
             elif tex.get("Map") in ["TexSlot2"] or "_ddn." in img.name.lower():  # this should be a ddn/ddna map
                 try:
                     mat.node_tree.links.new(texnode.outputs["Color"], shadergroup.inputs["ddna Color"])
-                    mat.node_tree.links.new(texnode.outputs["Alpha"], shadergroup.inputs["ddna Alpha"])
+                    #mat.node_tree.links.new(texnode.outputs["Alpha"], shadergroup.inputs["ddna Alpha"])
                 except:
                     try:
                         mat.node_tree.links.new(
