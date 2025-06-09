@@ -95,9 +95,9 @@ def a_to_c(attrs, alpha=1.0):
     :param alpha: alpha value for new color
     :returns: `tuple` of the converted (r,g,b,alpha) values
     """
-    r = color_srgb_to_scene_linear(float(attrs["r"]) / 256)
-    g = color_srgb_to_scene_linear(float(attrs["g"]) / 256)
-    b = color_srgb_to_scene_linear(float(attrs["b"]) / 256)
+    r = color_srgb_to_scene_linear(float(attrs["r"]) / 255)
+    g = color_srgb_to_scene_linear(float(attrs["g"]) / 255)
+    b = color_srgb_to_scene_linear(float(attrs["b"]) / 255)
     return r, g, b, alpha
 
 
@@ -109,8 +109,8 @@ def getsRGBColor(c):
     return x, y, z, a
 
 
-def color_srgb_to_scene_linear(c, gamma=2.2):
-    # c *= 2.2
+def color_srgb_to_scene_linear(c, gamma=2.4):
+    # c *= 2.4
     if c < 0.04045:
         return 0.0 if c < 0.0 else c * (1.0 / 12.92)
     else:
@@ -977,6 +977,17 @@ class MTLLoader:
 
         if mtl_attrs.get("Textures"):
             self.load_textures(mtl_attrs["Textures"], mat, shadergroup)
+        
+        for submat in mtl_attrs["MatLayers"]:
+            if (subpath := self._load_sub_material(submat.get("Path"))) is None:
+                continue
+
+            if subpath.stem in bpy.data.node_groups:
+                newbasegroup = nodes.new("ShaderNodeGroup")
+                newbasegroup.node_tree = bpy.data.node_groups[subpath.stem]
+            else:
+                logger.error(f'Unknown shader node group "{subpath.stem}" in {mat.name}')
+                continue
 
         return mat
 
