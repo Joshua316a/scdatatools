@@ -7,7 +7,7 @@ from scdatatools.blender.utils import hashed_path_key
 
 logger = logging.getLogger(__name__)
 
-SCSHARDERS_BLEND = Path(__file__).parent / "SCShaders.blend"
+SCSHADERS_BLEND = Path(__file__).parent / "SCShaders.blend"
 REQUIRED_SHADER_NODE_GROUPS = [
     ".IES mapping",
     "_Parallax (UV)",
@@ -30,17 +30,19 @@ REQUIRED_SHADER_NODE_GROUPS = [
 
 
 def ensure_node_groups_loaded() -> bool:
-    if not SCSHARDERS_BLEND.is_file():
+    if not SCSHADERS_BLEND.is_file():
         return False
 
     for ng in REQUIRED_SHADER_NODE_GROUPS:
         if ng not in bpy.data.node_groups:
-            ng_file = SCSHARDERS_BLEND / "NodeTree" / ng
+            ng_file = SCSHADERS_BLEND / "NodeTree" / ng
             try:
                 bpy.ops.wm.append(
                     filepath=ng_file.as_posix(),
-                    directory=ng_file.parent.as_posix(),
+                    directory=ng_file.parent.as_posix(),                    
                     filename=ng,
+                    do_reuse_local_id = True,
+                    set_fake = True
                 )
                 logger.debug(f"Loaded SC Shader node group - {ng}")
             except Exception as e:
