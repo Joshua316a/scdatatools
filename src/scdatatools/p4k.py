@@ -1,4 +1,3 @@
-import line_profiler
 import fnmatch
 import io
 import logging
@@ -175,6 +174,12 @@ class P4KInfo(zipfile.ZipInfo):
             if tp == 0x0001:
                 if ln >= 24:
                     counts = struct.unpack("<QQQ", self.extra[offset + 4 : offset + 28])
+                elif ln == 18:
+                    # _P4K_ZIP64_18_COMPAT: SC 4.8 PTU introduced a ZIP64
+                    # extra field of ln=18 (file_size:8 + compress_size:8 +
+                    # disk_start:2).  Extract the two size QWORDs and ignore
+                    # the trailing 2-byte disk_start field.
+                    counts = struct.unpack("<QQ", self.extra[offset + 4 : offset + 20])
                 elif ln == 16:
                     counts = struct.unpack("<QQ", self.extra[offset + 4 : offset + 20])
                 elif ln == 8:
@@ -289,9 +294,8 @@ class P4KFile(zipfile.ZipFile):
             self.NameToInfoLower[x.filename.casefold()] = x
             self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
 
-    @line_profiler.profile
-    def _RealGetContents(self):
-        """Read in the table of contents for the ZIP file."""
+        def _RealGetContents(self):
+            """Read in the table of contents for the ZIP file."""
         fp = self.fp
         try:
             endrec = zipfile._EndRecData(fp)
@@ -312,7 +316,19 @@ class P4KFile(zipfile.ZipFile):
         # self.start_dir:  Position of start of central directory
         self.start_dir = offset_cd + concat
         fp.seek(self.start_dir, 0)
-        data = io.BytesIO(fp.read(size_cd))
+        raw_cd = fp.read(size_cd)
+        # SC 4.7+ p4k files prepend a CIG-proprietary header before the first
+        # standard ZIP central-directory entry.  Find the first PK\x01\x02
+        # signature so the entry-parsing loop always starts on a valid record.
+        # The same preamble length is prepended to every local file entry, so
+        # we add it to `concat` so that `header_offset + concat` in each entry
+        # resolves to the actual PK\x03\x04 local file header.
+        _preamble = raw_cd.find(zipfile.stringCentralDir)  # b'PK\x01\x02'
+        if _preamble > 0:
+            raw_cd = raw_cd[_preamble:]
+            size_cd -= _preamble
+            concat += _preamble  # shift all local-header offsets by preamble length
+        data = io.BytesIO(raw_cd)
         while data.tell() < size_cd:
             centdir = data.read(zipfile.sizeCentralDir)
             if len(centdir) != zipfile.sizeCentralDir:
