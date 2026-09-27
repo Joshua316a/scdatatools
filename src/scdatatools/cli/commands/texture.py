@@ -9,8 +9,8 @@ from nubia import command, argument
 from scdatatools.engine.textures import (
     collect_and_unsplit,
     tex_convert,
-    ConverterUtility,
 )
+from scdatatools.engine.textures.converter import ConverterUtility
 from scdatatools.engine.textures.dds import is_glossmap
 from scdatatools.utils import NamedBytesIO
 

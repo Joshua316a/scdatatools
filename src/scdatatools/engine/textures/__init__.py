@@ -1,7 +1,7 @@
 import shutil
 
 from .dds import unsplit_dds, collect_and_unsplit, is_glossmap, is_normals
-from .converter import convert_buffer, tex_convert
+from .converter import convert_buffer, tex_convert, ConverterUtility
 
 
 DDS_CONV_FALLBACK = "png"
