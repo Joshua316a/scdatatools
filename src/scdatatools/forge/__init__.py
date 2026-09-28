@@ -131,6 +131,7 @@ class DataCoreBinary:
         self._string_cache2 = {}
 
         self.records_by_guid = {}
+        self._record_version = self.header.version
         self.record_types = set()
         self.entities: dict[str, Record] = {}
         for r in self.records:

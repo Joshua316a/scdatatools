@@ -439,6 +439,8 @@ class Record(Pointer, DataCoreNamed):
         ("id", GUID),
         ("instance_index", ctypes.c_uint16),
         ("other_index", ctypes.c_uint16),
+        # SC 4.10.1+ extra field (a4c1, size=3912)
+        ("_a4c1_extra", ctypes.c_uint8 * 3912),
     ]
 
     def __init__(self, *args, **kwargs):
