@@ -24,13 +24,34 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install test dependencies (wheels only)
-        run: pip install --only-binary :all: pytest zstandard pycryptodome xxhash numpy pyquaternion
+        run: "pip install --only-binary :all: pytest zstandard pycryptodome xxhash numpy pyquaternion"
       - name: Run Workstream 1 fixture suite
         run: python -m pytest tests/ -q
+
+  install-smoke:
+    name: Clean install, no compiler (G10)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package with default dependencies
+        # No --no-build-isolation overrides, no compiler toolchain installed
+        # on these runners: any sdist-only or C-extension requirement fails
+        # here instead of on a contributor's machine.
+        run: pip install ./
+      - name: Full package import smoke test
+        run: python -c "import scdatatools; from scdatatools.p4k import P4KFile; from scdatatools.forge import DataCoreBinary; print('import-ok')"

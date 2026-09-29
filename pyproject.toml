@@ -14,16 +14,15 @@ keywords= ["scdatatools","star citizen", "CIG", "cloud imperium games", "squadro
 #packages = [
 #    { include = "scdatatools" }
 #]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10"
 dependencies = [
     "fnvhash~=0.1.0",
     "hexdump~=3.3",
     "humanize~=4.11.0",
-    "numpy==1.24.3",
+    "numpy>=1.24.3",
     "packaging~=24.1",
-    "pillow~=10.4.0",
+    "pillow>=10.4.0",
     "pycryptodome~=3.21.0",
-    "pynubia~=0.3.0",
     "pyquaternion~=0.9.9",
     "pyrsi~=0.1.19",
     "rich~=13.9.4",
@@ -31,6 +30,14 @@ dependencies = [
     "tqdm~=4.66.6",
     "xxhash~=3.5.0",
     "zstandard~=0.23.0",
+]
+
+[project.optional-dependencies]
+# `scdt` CLI framework. pynubia is abandoned and unimportable on
+# Python 3.12+ (uses the removed `imp` module), so it must never be a
+# default dependency (R-SC-015). Library use needs no CLI extra.
+cli = [
+    "pynubia~=0.3.0; python_version < '3.12'",
 ]
 
 [build-system]
@@ -47,8 +54,8 @@ dev = [
 scdt = "scdatatools.cli:main"
 
 [project.urls]
-Homepage = "https://gitlab.com/scmodding/frameworks/scdatatools"
+Homepage = "https://github.com/Joshua316a/scdatatools"
 Documentation = "https://scdatatools.readthedocs.io/en/latest/"
-Repository = "https://gitlab.com/scmodding/frameworks/scdatatools"
-Issues = "https://gitlab.com/scmodding/frameworks/scdatatools/-/issues"
-Changelog = "https://gitlab.com/scmodding/frameworks/scdatatools/-/blob/devel/HISTORY.rst"
+Repository = "https://github.com/Joshua316a/scdatatools"
+Issues = "https://github.com/Joshua316a/scdatatools/issues"
+Changelog = "https://github.com/Joshua316a/scdatatools/blob/devel/HISTORY.rst"
