@@ -32,14 +32,6 @@ dependencies = [
     "zstandard~=0.23.0",
 ]
 
-[project.optional-dependencies]
-# `scdt` CLI framework. pynubia is abandoned and unimportable on
-# Python 3.12+ (uses the removed `imp` module), so it must never be a
-# default dependency (R-SC-015). Library use needs no CLI extra.
-cli = [
-    "pynubia~=0.3.0; python_version < '3.12'",
-]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

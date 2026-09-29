@@ -4,7 +4,6 @@ import typing
 from functools import partial
 from pathlib import Path
 
-from nubia import command, argument
 from rich.progress import Progress
 
 from scdatatools.sc.blueprints.generators.datacore_entity import blueprint_from_datacore_entity
@@ -30,23 +29,9 @@ def resolve_blueprint(sc, entity):
     sys.exit(1)
 
 
-@command(aliases=["bp"])
 class blueprint:
     """Generate and extract STar Citizen Blueprint (scbp)."""
 
-    @command()
-    @common.sc_dir_argument
-    @argument(
-        "entity",
-        description="The Data Core entity record to generate a blueprint for.",
-        positional=True,
-    )
-    @argument(
-        "output",
-        aliases=["-o"],
-        description="The output path to write the blueprint. Defaults to `entity_name.scbp` in the current directory. "
-        'Use "-" to print the blueprint to stdout',
-    )
     def generate(
         self,
         sc_dir: str,
@@ -76,15 +61,6 @@ class blueprint:
                 with open(output, "w") as o:
                     bp.dump(o)
 
-    @command()
-    @common.sc_dir_argument
-    @argument(
-        "entity_or_blueprint",
-        description="The Data Core entity record to extract, or scbp file.",
-        positional=True,
-    )
-    @argument("output", description="Output directory to extract data into", positional=True)
-    @common.extraction_args(exclude=["extract_model_assets", "output"])
     def extract(
         self,
         sc_dir: str,
@@ -131,3 +107,78 @@ class blueprint:
             }
             progbar.reset(generating_bp, description=f"Exporting {bp.name}")
             bp.extract(outdir=output, monitor=partial(log, generating_bp), **opts)
+
+
+def register_blueprint(subparsers, parents):
+    """Register `scdt blueprint` (argparse translation of the nubia decorators)."""
+    group = subparsers.add_parser(
+        "blueprint",
+        aliases=["bp"],
+        parents=parents,
+        help="Generate and extract STar Citizen Blueprint (scbp).",
+        description="Generate and extract STar Citizen Blueprint (scbp).",
+    )
+    subs = group.add_subparsers(dest="blueprint_command", metavar="[subcommand]")
+    inst = blueprint()
+
+    gen = subs.add_parser(
+        "generate",
+        parents=parents,
+        help="Generate a scbp",
+        description="Generate a scbp",
+    )
+    common.add_sc_dir_argument(gen)
+    gen.add_argument(
+        "entity",
+        metavar="entity<STR>",
+        help="The Data Core entity record to generate a blueprint for.",
+    )
+    common.add_option(
+        gen, "output", str, "",
+        "The output path to write the blueprint. Defaults to `entity_name.scbp` in the current directory. "
+        'Use "-" to print the blueprint to stdout',
+        aliases=["-o"],
+    )
+    gen.set_defaults(_handler=lambda ns: inst.generate(
+        sc_dir=ns.sc_dir,
+        entity=ns.entity,
+        output=ns.output,
+    ))
+
+    ext = subs.add_parser(
+        "extract",
+        parents=parents,
+        help="Extract all the record assets for a given blueprint, optionally also generating the blueprint.",
+        description="Extract all the record assets for a given blueprint, optionally also generating the blueprint.",
+    )
+    common.add_sc_dir_argument(ext)
+    ext.add_argument(
+        "entity_or_blueprint",
+        metavar="entity-or-blueprint<STR>",
+        help="The Data Core entity record to extract, or scbp file.",
+    )
+    # NOTE: no default in the original signature either — required positional,
+    # matching the previous interface.
+    ext.add_argument(
+        "output",
+        metavar="output<STR>",
+        help="Output directory to extract data into",
+    )
+    common.add_extraction_args(ext, exclude=["extract_model_assets", "output"], defaults={
+        "convert_cryxml": "xml",
+        "unsplit_textures": True,
+        "convert_textures": "",
+        "convert_models": False,
+        "no_overwrite": False,
+    })
+    ext.set_defaults(_handler=lambda ns: inst.extract(
+        sc_dir=ns.sc_dir,
+        entity_or_blueprint=ns.entity_or_blueprint,
+        output=ns.output,
+        convert_cryxml=ns.convert_cryxml,
+        unsplit_textures=ns.unsplit_textures,
+        convert_textures=ns.convert_textures,
+        convert_models=ns.convert_models,
+        no_overwrite=ns.no_overwrite,
+    ))
+    return group

@@ -1,30 +1,40 @@
+import argparse
 import logging
 import sys
 import typing
-from collections import OrderedDict
 from pathlib import Path
-
-from nubia import context
-from nubia.internal.typing import _ArgDecoratorSpec, _init_attr
-
-from scdatatools.launcher import get_installed_sc_versions
-from scdatatools.sc import StarCitizen
-
-if typing.TYPE_CHECKING:
-    from ..plugin import SCDTContext
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_context() -> "SCDTContext":
-    return context.get_context()
+class _CliContext:
+    """Process-wide CLI context (replaces nubia's Context object).
+
+    Populated once from the parsed global options by ``scdatatools.cli.main``
+    before dispatch; command bodies read it via :func:`get_context`.
+    """
+
+    cache_dir = None
+    verbose = 0
 
 
-def open_sc_dir(sc_dir: typing.Union[str, Path]) -> StarCitizen:
+_CTX = _CliContext()
+
+
+def get_context() -> _CliContext:
+    return _CTX
+
+
+def open_sc_dir(sc_dir: typing.Union[str, Path]):
     """Processes the `sc_dir` CLI argument and returns a `StarCitizen` object. This function will error and exit the
     program if it fails to open the given `sc_dir`.
     """
+    # Late imports: parser construction (including --help) must not require
+    # the game-data stack.
+    from scdatatools.launcher import get_installed_sc_versions
+    from scdatatools.sc import StarCitizen
+
     installed_versions = get_installed_sc_versions()
     if str(sc_dir).upper() in installed_versions and not Path(sc_dir).is_dir():
         sc_dir = installed_versions[sc_dir.upper()]
@@ -49,23 +59,9 @@ def open_sc_dir(sc_dir: typing.Union[str, Path]) -> StarCitizen:
     return sc
 
 
-def sc_dir_argument(function):
-    """Adds a 'sc_data_folder' argument for the given function on the CLI. The function does not need to handle this
-    argument and should access the selected nodes through the context
-    """
-    _init_attr(function, "__annotations__", OrderedDict())
-    _init_attr(function, "__arguments_decorator_specs", {})
-    function.__annotations__.setdefault("sc_dir", str)
-    function.__arguments_decorator_specs["sc_dir"] = _ArgDecoratorSpec(
-        arg="sc_dir",
-        name="sc_dir",
-        description="Star Citizen installation directory or Data.p4k file. You can also specify LIVE or PTU and scdt "
-        "will attempt to find the installed versions of Star Citizen.",
-        aliases=[],
-        positional=True,
-        choices=[],
-    )
-    return function
+def dash(name: str) -> str:
+    """CLI spelling for a Python argument name (nubia compatibility)."""
+    return "--" + name.replace("_", "-")
 
 
 EXTRACTION_ARGS = {
@@ -111,28 +107,77 @@ EXTRACTION_ARGS = {
 }
 
 
-def extraction_args(exclude=None):
-    """Adds p4k extraction options for the given function on the CLI."""
-    excluded_args = exclude or []
+def add_option(parser, name, type_, default, description, aliases=(), choices=None):
+    """Add one option mirroring nubia's rendering (dashes, type metavars)."""
+    # nubia compatibility: aliases with dashes are used verbatim; bare words
+    # become --long options (e.g. aliases=["png"] -> --png STR).
+    flags = [dash(name)] + [a if a.startswith("-") else "--" + a for a in aliases]
+    kwargs = {"help": description, "default": default}
+    if type_ is bool:
+        kwargs["action"] = "store_true"
+    elif type_ == "list":
+        kwargs["nargs"] = "*"
+        kwargs["metavar"] = "str"
+    elif choices is None:
+        # Plain strings render with nubia's STR metavar; choices render as
+        # {a,b} (metavar would suppress that).
+        kwargs["metavar"] = "STR"
+    if choices:
+        kwargs["choices"] = choices
+    parser.add_argument(*flags, **kwargs)
 
-    def wrap(function):
-        _init_attr(function, "__annotations__", OrderedDict())
-        _init_attr(function, "__arguments_decorator_specs", {})
 
-        for arg_name, params in EXTRACTION_ARGS.items():
-            if arg_name in excluded_args:
-                continue
-            function.__annotations__.setdefault(arg_name, params["type"])
-            function.__arguments_decorator_specs[arg_name] = _ArgDecoratorSpec(
-                arg=arg_name,
-                name=arg_name,
-                positional=params.get("positional", False),
-                description=params["description"],
-                aliases=params.get("aliases", []),
-                choices=params.get("choices", []),
+def add_sc_dir_argument(parser):
+    """Adds the `sc_dir` positional (Star Citizen dir or Data.p4k file)."""
+    parser.add_argument(
+        "sc_dir",
+        metavar="sc_dir<STR>",
+        help="Star Citizen installation directory or Data.p4k file. You can also specify LIVE or PTU and scdt "
+        "will attempt to find the installed versions of Star Citizen.",
+    )
+
+
+def add_extraction_args(parser, exclude=None, defaults=None):
+    """Adds the shared p4k extraction options (all optional flags).
+
+    `defaults` maps option names to the command signature's defaults, so
+    `--help` and dispatch match the previous interface exactly.
+    """
+    excluded = set(exclude or [])
+    given = defaults or {}
+    for arg_name, params in EXTRACTION_ARGS.items():
+        if arg_name in excluded:
+            continue
+        if arg_name not in given:
+            raise KeyError(
+                f"add_extraction_args: no default given for {arg_name!r} "
+                "(pass the command signature's defaults)"
             )
-        return function
+        add_option(
+            parser,
+            arg_name,
+            params["type"],
+            given.get(arg_name),
+            params["description"],
+            aliases=params.get("aliases", []),
+            choices=params.get("choices"),
+        )
 
-    if exclude is not None and not isinstance(exclude, list):
-        return wrap(exclude)
-    return wrap
+
+def add_global_options(parser):
+    """Adds --verbose/-v and --cache-dir/-C (present on every command)."""
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="Increase verbosity, can be specified multiple times",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        "-C",
+        default=None,
+        metavar="CACHE_DIR",
+        help="Set a cache directory for scdt to use for faster loading times for some commands. The cache directory"
+        " can also be set with the SCDT_CACHE_DIR environment variable.",
+    )

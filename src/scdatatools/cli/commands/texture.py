@@ -4,8 +4,6 @@ import sys
 import typing
 from pathlib import Path
 
-from nubia import command, argument
-
 from scdatatools.engine.textures import (
     collect_and_unsplit,
     tex_convert,
@@ -14,30 +12,12 @@ from scdatatools.engine.textures.converter import ConverterUtility
 from scdatatools.engine.textures.dds import is_glossmap
 from scdatatools.utils import NamedBytesIO
 
+from . import common
 
-@command
+
 class Tex:
     """Texture processing commands"""
 
-    @command(help="Recombine split DDS texture files (dds.N). This will attempt to locate the DDS pieces.")
-    @argument(
-        "dds_files",
-        description="DDS file to recombine. Split pieces will be found automatically. Directories "
-        "will be searched recursively for split textures.",
-        positional=True,
-    )
-    @argument(
-        "outdir",
-        aliases=["-o"],
-        description="Output directory to place unsplit textures. By default, the output texture will be placed next to"
-        "the input texture with '_full' appended to it's filename, or be replaced if -r is specified",
-    )
-    @argument("quiet", aliases=["-q"], description="Only print errors")
-    @argument(
-        "replace",
-        aliases=["-r"],
-        description="Replace the DDS file and also remove the pieces. Only if not output directory is specified",
-    )
     def dds_unsplit(
         self,
         dds_files: typing.List[str],
@@ -83,30 +63,6 @@ class Tex:
                 sys.stderr.write(f"Failed to convert {ddsfile}: {repr(e)}\n")
                 sys.stderr.flush()
 
-    @command(help="Convert DDS textures to another format.")
-    @argument(
-        "dds_files",
-        description="DDS file to converter. Split pieces will be found automatically. Directories "
-        "will be searched recursively for split textures.",
-        positional=True,
-    )
-    @argument(
-        "outdir",
-        aliases=["-o"],
-        description="Output directory to place converted textures. By default, the output texture will be placed next "
-        "to the input texture with the output extension.",
-    )
-    @argument(
-        "output_format",
-        aliases=["png"],
-        description="The output format to convert to (Defaults to png)",
-    )
-    @argument(
-        "converter",
-        aliases=["-c"],
-        description="Path to the converter (texconv or compressonatorcli) to use",
-    )
-    @argument("quiet", aliases=["-q"], description="Only print errors")
     def convert(
         self,
         dds_files: typing.List[str],
@@ -169,3 +125,93 @@ class Tex:
             except Exception as e:
                 sys.stderr.write(f"Failed to convert {ddsfile}: {repr(e)}\n")
                 sys.stderr.flush()
+
+
+def _add_dds_files_positional(parser, description):
+    parser.add_argument(
+        "dds_files",
+        nargs="*",
+        metavar="dds-files<str>",
+        help=description,
+    )
+
+
+def register_tex(subparsers, parents):
+    """Register `scdt tex` (argparse translation of the nubia decorators)."""
+    group = subparsers.add_parser(
+        "tex",
+        parents=parents,
+        help="Texture processing commands",
+        description="Texture processing commands",
+    )
+    subs = group.add_subparsers(dest="tex_command", metavar="[subcommand]")
+    inst = Tex()
+
+    unsplit = subs.add_parser(
+        "dds-unsplit",
+        parents=parents,
+        help="Recombine split DDS texture files (dds.N). This will attempt to locate the DDS pieces.",
+        description="Recombine split DDS texture files (dds.N). This will attempt to locate the DDS pieces.",
+    )
+    _add_dds_files_positional(
+        unsplit,
+        "DDS file to recombine. Split pieces will be found automatically. Directories "
+        "will be searched recursively for split textures.",
+    )
+    common.add_option(
+        unsplit, "outdir", str, "",
+        "Output directory to place unsplit textures. By default, the output texture will be placed next "
+        "to the input texture with '_full' appended to it's filename, or be replaced if -r is specified",
+        aliases=["-o"],
+    )
+    common.add_option(unsplit, "quiet", bool, False, "Only print errors", aliases=["-q"])
+    common.add_option(
+        unsplit, "replace", bool, False,
+        "Replace the DDS file and also remove the pieces. Only if not output directory is specified",
+        aliases=["-r"],
+    )
+    unsplit.set_defaults(_handler=lambda ns: inst.dds_unsplit(
+        dds_files=ns.dds_files,
+        outdir=ns.outdir,
+        quiet=ns.quiet,
+        replace=ns.replace,
+    ))
+
+    convert = subs.add_parser(
+        "convert",
+        parents=parents,
+        help="Convert DDS textures to another format.",
+        description="Convert DDS textures to another format.",
+    )
+    _add_dds_files_positional(
+        convert,
+        "DDS file to converter. Split pieces will be found automatically. Directories "
+        "will be searched recursively for split textures.",
+    )
+    # NOTE: aliases=["png"] renders as a --png STR alternate spelling,
+    # exactly like the previous interface (verified against its --help).
+    common.add_option(
+        convert, "output_format", str, "png",
+        "The output format to convert to (Defaults to png)",
+        aliases=["png"],
+    )
+    common.add_option(
+        convert, "outdir", str, "",
+        "Output directory to place converted textures. By default, the output texture will be placed next "
+        "to the input texture with the output extension.",
+        aliases=["-o"],
+    )
+    common.add_option(
+        convert, "converter", str, "texconv",
+        "Path to the converter (texconv or compressonatorcli) to use",
+        aliases=["-c"],
+    )
+    common.add_option(convert, "quiet", bool, False, "Only print errors", aliases=["-q"])
+    convert.set_defaults(_handler=lambda ns: inst.convert(
+        dds_files=ns.dds_files,
+        output_format=ns.output_format,
+        outdir=ns.outdir,
+        converter=ns.converter,
+        quiet=ns.quiet,
+    ))
+    return group

@@ -1,12 +1,9 @@
 import logging
 import sys
 import typing
-from collections import OrderedDict
 from itertools import chain
 from pathlib import Path
 
-from nubia import command, argument
-from nubia.internal.typing import _ArgDecoratorSpec, _init_attr
 from rich import get_console, table
 
 from scdatatools.forge import DataCoreBinary
@@ -46,28 +43,18 @@ def _dump_record(dcb, record, output, guid, guid_if_exists, xml):
             print(f"ERROR: Error processing {record.filename}: {e}")
 
 
-def forge_common_args(function):
-    _init_attr(function, "__annotations__", OrderedDict())
-    _init_attr(function, "__arguments_decorator_specs", {})
-    function.__annotations__.setdefault("forge_file", str)
-    function.__arguments_decorator_specs["forge_file"] = _ArgDecoratorSpec(
-        arg="forge_file",
-        name="forge_file",
-        aliases=[],
-        positional=True,
-        choices=[],
-        description="DataForge (.dcb) file to extract data from. (or Data.p4k or Star Citizen installation directory)",
+def add_forge_common_args(parser):
+    """Adds the shared forge-file positional and filter option."""
+    parser.add_argument(
+        "forge_file",
+        metavar="forge_file<STR>",
+        help="DataForge (.dcb) file to extract data from. (or Data.p4k or Star Citizen installation directory)",
     )
-    function.__annotations__.setdefault("filter", typing.List[str])
-    function.__arguments_decorator_specs["filter"] = _ArgDecoratorSpec(
-        arg="filter",
-        name="filter",
-        choices=[],
+    common.add_option(
+        parser, "filter", "list", ["*"],
+        "Posix style file filter of which files to extract",
         aliases=["-f"],
-        positional=False,
-        description="Posix style file filter of which files to extract",
     )
-    return function
 
 
 def parse_forge_args(forge_file, filter):
@@ -86,12 +73,9 @@ def parse_forge_args(forge_file, filter):
     return dcb, filters, records
 
 
-@command
 class forge:
     """Tools for interacting with the Dataforge database"""
 
-    @command
-    @forge_common_args
     def ls(self, forge_file: str, filter: typing.List[str] = ("*",)):
         """List records in the Data Core"""
         dcb, filters, records = parse_forge_args(forge_file, filter)
@@ -106,28 +90,6 @@ class forge:
             t.add_row(str(r.id), r.filename)
         get_console().print(t)
 
-    @command(exclusive_arguments=("xml", "json"), aliases=["x"])
-    @forge_common_args
-    @argument("single", description="Extract first matching file only", aliases=["-1"])
-    @argument(
-        "guid",
-        aliases=["-g"],
-        description="Include the GUID in the filename (avoids overwriting from records with the same 'filename') "
-        "(Default: False)",
-    )
-    @argument(
-        "guid_if_exists",
-        aliases=["-G"],
-        description="Include the GUID in the filename only if the output file already exists. (Default: True)",
-    )
-    @argument("xml", aliases=["-x"], description="Convert to XML (Default)")
-    @argument("json", aliases=["-j"], description="Convert to JSON")
-    @argument(
-        "output",
-        description="The output directory to extract files into or the output path if --single. "
-        "Defaults to current directory. Use '-' to output a single file to the stdout",
-        aliases=["-o"],
-    )
     def extract(
         self,
         forge_file: typing.Text,
@@ -166,3 +128,72 @@ class forge:
                         _dump_record(dcb, record, output, guid, guid_if_exists, not json)
             except KeyboardInterrupt:
                 pass
+
+
+def register_forge(subparsers, parents):
+    """Register `scdt forge` (argparse translation of the nubia decorators)."""
+    group = subparsers.add_parser(
+        "forge",
+        parents=parents,
+        help="Tools for interacting with the Dataforge database",
+        description="Tools for interacting with the Dataforge database",
+    )
+    subs = group.add_subparsers(dest="forge_command", metavar="[subcommand]")
+    inst = forge()
+
+    ls = subs.add_parser(
+        "ls",
+        parents=parents,
+        help="List records in the Data Core",
+        description="List records in the Data Core",
+    )
+    add_forge_common_args(ls)
+    ls.set_defaults(_handler=lambda ns: inst.ls(
+        forge_file=ns.forge_file,
+        filter=ns.filter,
+    ))
+
+    ex = subs.add_parser(
+        "extract",
+        aliases=["x"],
+        parents=parents,
+        help="Extracts DataCore records and converts them to a given format (xml/json). Use the `--filter` argument "
+        "to down-select which records to extract, by default it will extract all of them to the `--output` directory.",
+        description="Extracts DataCore records and converts them to a given format (xml/json).",
+    )
+    add_forge_common_args(ex)
+    common.add_option(
+        ex, "single", bool, False,
+        "Extract first matching file only", aliases=["-1"],
+    )
+    common.add_option(
+        ex, "guid", bool, False,
+        "Include the GUID in the filename (avoids overwriting from records with the same 'filename') "
+        "(Default: False)",
+        aliases=["-g"],
+    )
+    common.add_option(
+        ex, "guid_if_exists", bool, True,
+        "Include the GUID in the filename only if the output file already exists. (Default: True)",
+        aliases=["-G"],
+    )
+    fmt = ex.add_mutually_exclusive_group()
+    fmt.add_argument("--xml", "-x", action="store_true", default=True, help="Convert to XML (Default)")
+    fmt.add_argument("--json", "-j", action="store_true", default=False, help="Convert to JSON")
+    common.add_option(
+        ex, "output", str, ".",
+        "The output directory to extract files into or the output path if --single. "
+        "Defaults to current directory. Use '-' to output a single file to the stdout",
+        aliases=["-o"],
+    )
+    ex.set_defaults(_handler=lambda ns: inst.extract(
+        forge_file=ns.forge_file,
+        filter=ns.filter,
+        output=ns.output,
+        guid=ns.guid,
+        guid_if_exists=ns.guid_if_exists,
+        xml=ns.xml,
+        json=ns.json,
+        single=ns.single,
+    ))
+    return group

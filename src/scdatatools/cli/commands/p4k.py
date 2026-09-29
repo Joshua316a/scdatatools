@@ -3,7 +3,6 @@ import shutil
 import sys
 from pathlib import Path
 
-from nubia import command, argument
 from rich.progress import Progress
 
 from . import common
@@ -11,23 +10,7 @@ from . import common
 logger = logging.getLogger(__name__)
 
 
-@command(help="Utilities for interacting with p4k files.")
 class p4k:
-    @command(help="Extract files from a P4K file", aliases=["x"])
-    @argument("single", description="Extract first matching file only", aliases=["-1"])
-    @argument(
-        "output",
-        description="The output directory to extract files into or the output path if --single. "
-        "Defaults to current directory",
-        aliases=["-o"],
-    )
-    @argument(
-        "file_filter",
-        description="Posix style file filter of which files to extract. Defaults to '*'",
-        aliases=["-f"],
-    )
-    @common.sc_dir_argument
-    @common.extraction_args(exclude=["output"])
     def extract(
         self,
         sc_dir: str,
@@ -119,3 +102,60 @@ class p4k:
                     )
             except KeyboardInterrupt:
                 pass
+
+
+def register_p4k(subparsers, parents):
+    """Register `scdt p4k` (argparse translation of the nubia decorators)."""
+    group = subparsers.add_parser(
+        "p4k",
+        parents=parents,
+        help="Utilities for interacting with p4k files.",
+        description="Utilities for interacting with p4k files.",
+    )
+    subs = group.add_subparsers(dest="p4k_command", metavar="[subcommand]")
+    inst = p4k()
+
+    ex = subs.add_parser(
+        "extract",
+        aliases=["x"],
+        parents=parents,
+        help="Extract files from a P4K file",
+        description="Extract files from a P4K file",
+    )
+    common.add_sc_dir_argument(ex)
+    common.add_option(
+        ex, "single", bool, False,
+        "Extract first matching file only", aliases=["-1"],
+    )
+    common.add_option(
+        ex, "output", str, ".",
+        "The output directory to extract files into or the output path if --single. "
+        "Defaults to current directory",
+        aliases=["-o"],
+    )
+    common.add_option(
+        ex, "file_filter", str, "*",
+        "Posix style file filter of which files to extract. Defaults to '*'",
+        aliases=["-f"],
+    )
+    common.add_extraction_args(ex, exclude=["output"], defaults={
+        "convert_cryxml": "",
+        "extract_model_assets": False,
+        "unsplit_textures": False,
+        "convert_textures": "",
+        "convert_models": False,
+        "no_overwrite": False,
+    })
+    ex.set_defaults(_handler=lambda ns: inst.extract(
+        sc_dir=ns.sc_dir,
+        output=ns.output,
+        file_filter=ns.file_filter,
+        convert_cryxml=ns.convert_cryxml,
+        extract_model_assets=ns.extract_model_assets,
+        unsplit_textures=ns.unsplit_textures,
+        convert_textures=ns.convert_textures,
+        convert_models=ns.convert_models,
+        single=ns.single,
+        no_overwrite=ns.no_overwrite,
+    ))
+    return group

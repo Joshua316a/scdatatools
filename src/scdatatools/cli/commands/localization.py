@@ -6,7 +6,6 @@ import typing
 from csv import DictWriter
 from pathlib import Path
 
-from nubia import command, argument
 from rich import get_console, table
 
 from . import common
@@ -15,18 +14,9 @@ from ..utils import track
 logger = logging.getLogger(__name__)
 
 
-@command(aliases=["loc"])
 class localization:
     """Localization utilities"""
 
-    @command()
-    @common.sc_dir_argument
-    @argument(
-        "languages",
-        description="Languages to translate to from the available languages. Defaults to english",
-        aliases=["-l"],
-    )
-    @argument("text", positional=True, description="The text to translate")
     def translate(
         self,
         sc_dir: str,
@@ -54,19 +44,6 @@ class localization:
         t.add_row(*translations)
         get_console().print(t)
 
-    @command
-    @common.sc_dir_argument
-    @argument(
-        "filter",
-        aliases=["-f"],
-        description="Regex filter to down-select the printed translations. The filter will apply to the key names, "
-        "as well as the translations for the key",
-    )
-    @argument(
-        "languages",
-        description="Languages to display to from the available languages. Defaults to all",
-        aliases=["-l"],
-    )
     def ls(
         self,
         sc_dir: str,
@@ -103,24 +80,6 @@ class localization:
                 t.add_row(*row)
         get_console().print(t)
 
-    @command
-    @common.sc_dir_argument
-    @argument(
-        "filter",
-        aliases=["-f"],
-        description="Regex filter to down-select the printed translations. The filter will apply to the key names, "
-        "as well as the translations for the key",
-    )
-    @argument(
-        "languages",
-        description="Languages to display to from the available languages. Defaults to all",
-        aliases=["-l"],
-    )
-    @argument(
-        "output",
-        description='Output filename or "-" to print to the screen',
-        positional=True,
-    )
     def export(
         self,
         sc_dir: str,
@@ -158,3 +117,98 @@ class localization:
                 print(outfile.getvalue())
         finally:
             outfile.close()
+
+
+def _add_languages_option(parser, description):
+    common.add_option(
+        parser, "languages", "list", None,
+        description,
+        aliases=["-l"],
+    )
+
+
+def _add_filter_option(parser):
+    common.add_option(
+        parser, "filter", str, "",
+        "Regex filter to down-select the printed translations. The filter will apply to the key names, "
+        "as well as the translations for the key",
+        aliases=["-f"],
+    )
+
+
+def register_localization(subparsers, parents):
+    """Register `scdt localization` (argparse translation of the nubia decorators)."""
+    group = subparsers.add_parser(
+        "localization",
+        aliases=["loc"],
+        parents=parents,
+        help="Localization utilities",
+        description="Localization utilities",
+    )
+    subs = group.add_subparsers(dest="localization_command", metavar="[subcommand]")
+    inst = localization()
+
+    translate = subs.add_parser(
+        "translate",
+        parents=parents,
+        help="Translate a give text using the p4k's localization database.",
+        description="Translate a give text using the p4k's localization database.",
+    )
+    common.add_sc_dir_argument(translate)
+    translate.add_argument(
+        "text",
+        metavar="text<STR>",
+        help="The text to translate",
+    )
+    _add_languages_option(
+        translate,
+        "Languages to translate to from the available languages. Defaults to english",
+    )
+    translate.set_defaults(_handler=lambda ns: inst.translate(
+        sc_dir=ns.sc_dir,
+        text=ns.text,
+        languages=ns.languages,
+    ))
+
+    ls = subs.add_parser(
+        "ls",
+        parents=parents,
+        help="List translations",
+        description="List translations",
+    )
+    common.add_sc_dir_argument(ls)
+    _add_filter_option(ls)
+    _add_languages_option(
+        ls,
+        "Languages to display to from the available languages. Defaults to all",
+    )
+    ls.set_defaults(_handler=lambda ns: inst.ls(
+        sc_dir=ns.sc_dir,
+        languages=ns.languages,
+        filter=ns.filter,
+    ))
+
+    export = subs.add_parser(
+        "export",
+        parents=parents,
+        help="Export translations to  csv",
+        description="Export translations to  csv",
+    )
+    common.add_sc_dir_argument(export)
+    _add_filter_option(export)
+    _add_languages_option(
+        export,
+        "Languages to display to from the available languages. Defaults to all",
+    )
+    export.add_argument(
+        "output",
+        metavar="output<STR>",
+        help='Output filename or "-" to print to the screen',
+    )
+    export.set_defaults(_handler=lambda ns: inst.export(
+        sc_dir=ns.sc_dir,
+        output=ns.output,
+        languages=ns.languages,
+        filter=ns.filter,
+    ))
+    return group
