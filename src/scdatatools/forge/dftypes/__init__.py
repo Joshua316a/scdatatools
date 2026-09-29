@@ -458,46 +458,31 @@ def assert_byte_budget(count, stride, remaining, what):
 
 
 # DCB header version -> Record struct name. v5/v6 share the classic 32-byte
-# layout (byte-identical paths). v8's record blob is conditional/tabled, NOT
-# a flat +3912 B/record (117022 records x 3912 B = ~462 MB demanded of a
-# ~332 MB file — arithmetically impossible), and has no validated struct map
-# yet, so it refuses loudly until Phase 2 lands a StarBreaker-diffed layout.
-DCB_RECORD_TYPES = {5: "Record", 6: "Record"}
+# layout (byte-identical paths). v8 records are a fixed 36-byte stride: the
+# classic layout gains a 4-byte team/extra offset after filename_offset, and
+# other_index is replaced by struct_size (derived from svarog's
+# read_records_v8, 19h/svarog, MIT — validated field-for-field against its
+# JSON dump of the LIVE Game2.dcb in Phase 2).
+DCB_RECORD_TYPES = {5: "Record", 6: "Record", 8: "RecordV8"}
 
 
 def record_type_for_version(version):
     """Return the Record struct class for a DCB header version.
 
     Raises DataCoreVersionError naming the version for anything without a
-    validated map — v8 today, any future version tomorrow.
+    validated map.
     """
     name = DCB_RECORD_TYPES.get(version)
     if name is None:
         raise DataCoreVersionError(
-            f"unsupported DCB version {version}: no validated Record struct map "
-            f"(v8 layout is conditional/tabled — pending Phase 2 "
-            f"StarBreaker-diff validation)"
+            f"unsupported DCB version {version}: no validated Record struct map"
         )
     return globals()[name]
 
 
-class Record(Pointer, DataCoreNamed):
-    _fields_ = [
-        ("name_offset", ctypes.c_uint32),
-        ("filename_offset", ctypes.c_uint32),
-        ("structure_index", ctypes.c_uint32),
-        ("id", GUID),
-        ("instance_index", ctypes.c_uint16),
-        ("other_index", ctypes.c_uint16),
-    ]
-
-    # NOTE: no version-specific tail on this struct. The SC 4.10.1+ a4c1 blob
-    # is NOT part of the v5/v6 layout (a flat per-record tail overshoots real
-    # files); v8+ versions are dispatched/refused via
-    # record_type_for_version(), never silently mis-walked.
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class _RecordView:
+    """Shared Record accessors (name/filename/repr/str), independent of the
+    version-specific struct tail."""
 
     # Pulls from the new string table in Datacore V6
     @property
@@ -516,6 +501,47 @@ class Record(Pointer, DataCoreNamed):
     def __str__(self):
         struct_name = self.structure_definition.name if self.structure_definition is not None else DCB_NO_PARENT
         return f"record:{self.name}:{self.id.value}_struct:{struct_name}"
+
+
+class Record(_RecordView, Pointer, DataCoreNamed):
+    _fields_ = [
+        ("name_offset", ctypes.c_uint32),
+        ("filename_offset", ctypes.c_uint32),
+        ("structure_index", ctypes.c_uint32),
+        ("id", GUID),
+        ("instance_index", ctypes.c_uint16),
+        ("other_index", ctypes.c_uint16),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    # NOTE: no version-specific tail on this struct. The SC 4.10.1+ a4c1 blob
+    # is NOT part of the v5/v6 layout (a flat per-record tail overshoots real
+    # files); v8+ versions are dispatched via record_type_for_version(),
+    # never silently mis-walked.
+
+
+class RecordV8(_RecordView, Pointer, DataCoreNamed):
+    """v8 record layout: fixed 36-byte stride.
+
+    Classic layout plus a 4-byte team/extra offset after filename_offset,
+    with other_index replaced by struct_size. Derived from svarog's
+    read_records_v8 and validated field-for-field against its JSON dump.
+    """
+
+    _fields_ = [
+        ("name_offset", ctypes.c_uint32),
+        ("filename_offset", ctypes.c_uint32),
+        ("team_offset", ctypes.c_uint32),
+        ("structure_index", ctypes.c_uint32),
+        ("id", GUID),
+        ("instance_index", ctypes.c_uint16),
+        ("struct_size", ctypes.c_uint16),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class Reference(DataCoreBase):

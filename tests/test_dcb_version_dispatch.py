@@ -70,9 +70,29 @@ def test_v6_parses_record_count():
     assert len(dcb.records) == 2
 
 
-def test_v8_refuses_loudly_naming_version():
-    with pytest.raises(dftypes.DataCoreVersionError, match="8"):
-        DataCoreBinary(build_dcb(8, 0))
+def test_v8_uses_36_byte_records():
+    import ctypes as _ct
+
+    assert _ct.sizeof(dftypes.RecordV8) == 36
+    assert dftypes.record_type_for_version(8) is dftypes.RecordV8
+
+
+def _record_v8(idx=0):
+    noparent = 0xFFFFFFFF
+    guid = bytes([idx % 256]) + b"\x00" * 15
+    return struct.pack(
+        "<IIII16sHH",
+        0, 0, 0, noparent, guid, 0xFFFF, 0,
+    )
+
+
+def test_v8_parses_record_count():
+    counts = [0] * _N_U32
+    counts[_RECORD_COUNT_IDX] = 2
+    header = struct.pack("<IIHHHH" + "I" * _N_U32, 0, 8, 0, 0, 0, 0, *counts)
+    dcb = DataCoreBinary(header + _record_v8(1) + _record_v8(2))
+    assert len(dcb.records) == 2
+    assert len(dcb.records_by_guid) == 2
 
 
 def test_unknown_version_refuses_loudly_naming_version():
