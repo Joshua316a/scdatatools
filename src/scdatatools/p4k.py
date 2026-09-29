@@ -8,6 +8,7 @@ import struct
 import sys
 import typing
 import zipfile
+import zlib
 from pathlib import Path
 
 import zstandard as zstd
@@ -22,8 +23,43 @@ p4kFileHeader = b"PK\x03\x14"
 DEFAULT_P4K_KEY = b"\x5e\x7a\x20\x02\x30\x2e\xeb\x1a\x3b\xb6\x17\xc3\x0f\xde\x1e\x47"
 DEFAULT_CRYXML_CONVERT_FMT = "xml"
 
+# JiJi P4K v2 constants (Workstream 1, Task 3.1). Layout per svarog's
+# eocd_v2/central_dir_v2 (19h/svarog, MIT), derived from the official
+# CigDataPatcher decompilation: a fixed 175-byte trailer at EOF
+# (version u16 == 2 at 0xA9, magic u32 "JiJi" at 0xAB) plus fixed 0xCC-byte
+# CDR entries with names in a separate null-terminated table. v2 has NO
+# local file headers — entry offsets point directly at payload bytes.
+JIJI_EOCD_SIZE = 0xAF
+JIJI_MAGIC = 0x696A694A
+JIJI_VERSION = 2
+JIJI_CDR_ENTRY_SIZE = 0xCC
+
 compressor_names = zipfile.compressor_names
 compressor_names[100] = "zstd"
+compressor_names[93] = "zstd-deprecated"
+compressor_names[101] = "zlib-deflate"
+
+
+# Compression methods registry (Workstream 1, Task 3.2 / R-SC-011): numeric
+# method -> decoder. Unknown methods raise with the entry name attached
+# instead of failing obscurely deep in the read path.
+#   0   stored (passthrough)      8   raw deflate (stdlib)
+#   93  zstd, deprecated framing  100 zstd
+#   101 zlib-wrapped deflate
+def decompressor_for_method(compress_type, filename="<unknown>"):
+    """Return a stateful decompressor for a P4K compression method.
+
+    The returned object must expose `.decompress(bytes)` and `.eof`, matching
+    what P4KExtFile's read path consumes. Stored/deflate entries never reach
+    here (handled inline); unknown methods raise ValueError naming the entry.
+    """
+    if compress_type in (93, 100):
+        return ZStdDecompressor()
+    if compress_type == 101:
+        return zlib.decompressobj()
+    raise ValueError(
+        f"unsupported compression method {compress_type} for entry {filename!r}"
+    )
 
 
 def monitor_msg_from_info(info):
@@ -71,7 +107,17 @@ class P4KExtFile(zipfile.ZipExtFile):
     def __init__(self, fileobj, mode, p4kinfo, decrypter=None, close_fileobj=False):
         self.p4kinfo = p4kinfo
         self._is_encrypted = p4kinfo.is_encrypted
-        self._decompressor = ZStdDecompressor()
+        # Decoder behind the same interface for every non-trivial method.
+        # Stored (0) and raw deflate (8) never consult _decompressor (the
+        # read path handles them inline); every other method resolves via
+        # the registry, which raises with the entry name attached when the
+        # method is unknown (R-SC-011).
+        if p4kinfo.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+            self._decompressor = ZStdDecompressor()
+        else:
+            self._decompressor = decompressor_for_method(
+                p4kinfo.compress_type, p4kinfo.filename
+            )
 
         self._fileobj = fileobj
         self._decrypter = decrypter
@@ -280,6 +326,88 @@ class P4KFile(zipfile.ZipFile):
             for part in path.filename.split("/"):
                 parent = parent.setdefault(part, {})
 
+    @staticmethod
+    def _peek_jiji_trailer(fp):
+        """Return the 175-byte JiJi v2 trailer, or None when absent.
+
+        Detection: last 6 bytes hold version u16 == 2 then magic u32 "JiJi".
+        Never raises — a short/unreadable tail simply means "not v2".
+        """
+        try:
+            fp.seek(-JIJI_EOCD_SIZE, os.SEEK_END)
+            tail = fp.read(JIJI_EOCD_SIZE)
+        except OSError:
+            return None
+        if len(tail) != JIJI_EOCD_SIZE:
+            return None
+        version, magic = struct.unpack("<HI", tail[0xA9:0xAF])
+        if version == JIJI_VERSION and magic == JIJI_MAGIC:
+            return tail
+        return None
+
+    def _read_contents_v2(self, fp, trailer):
+        """Walk a JiJi v2 central directory (Task 3.1).
+
+        Parses the fixed 0xCC-byte entry array plus the null-terminated name
+        table, building the same P4KInfo index the v1 walk produces. Entry
+        header_offsets point directly at payload bytes (no local headers).
+        """
+        (n_entries, _n_ext, cd_offset, _cd_size, _ext_size, text_offset,
+         _text_size) = struct.unpack("<QQQQQQQ", trailer[0x00:0x38])
+        fp.seek(cd_offset, os.SEEK_SET)
+        raw_entries = fp.read(n_entries * JIJI_CDR_ENTRY_SIZE)
+        if len(raw_entries) != n_entries * JIJI_CDR_ENTRY_SIZE:
+            raise zipfile.BadZipFile("Truncated JiJi v2 central directory")
+        fp.seek(text_offset, os.SEEK_SET)
+        name_table = fp.read(_text_size)
+
+        for i in range(n_entries):
+            e = raw_entries[i * JIJI_CDR_ENTRY_SIZE:(i + 1) * JIJI_CDR_ENTRY_SIZE]
+            method, dos_time, dos_date, crc = struct.unpack("<HHHI", e[0x00:0x0A])
+            comp_size, file_size, data_off, name_off = struct.unpack("<QQQQ", e[0x0A:0x2A])
+            (enc_flag,) = struct.unpack("<H", e[0xAA:0xAC])
+            name_end = name_table.index(b"\x00", name_off)
+            try:
+                filename = name_table[name_off:name_end].decode("utf-8")
+            except UnicodeDecodeError:
+                filename = name_table[name_off:name_end].decode("utf-8", errors="replace")
+                log.warning("JiJi v2 entry %d: non-UTF8 name, replaced", i)
+
+            if self._load_monitor is not None:
+                self._load_monitor(msg=filename, progress=i + 1, total=n_entries)
+
+            x = P4KInfo(filename, p4k=self, archive=self)
+            x.extra = b""
+            x.comment = b""
+            # v2 has no local file headers: absolute payload offset.
+            x.header_offset = data_off
+            x.create_system = 3
+            x.extract_version = 20
+            x.flag_bits = 0x800  # v2 names are UTF-8
+            x.compress_type = method
+            x.CRC = crc
+            x.compress_size = comp_size
+            x.file_size = file_size
+            x.date_time = (
+                (dos_date >> 9) + 1980,
+                (dos_date >> 5) & 0xF,
+                dos_date & 0x1F,
+                dos_time >> 11,
+                (dos_time >> 5) & 0x3F,
+                (dos_time & 0x1F) * 2,
+            )
+            x.is_encrypted = enc_flag == 1
+            x._p4k_v2 = True
+            self.filelist.append(x)
+            self.NameToInfo[x.filename] = x
+            self.NameToInfoLower[x.filename.casefold()] = x
+            self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
+
+            file_ext = x.filename.split(".", maxsplit=1)[-1]
+            if file_ext.casefold() in SUB_ARCHIVES:
+                if x.filename not in self.subarchives:
+                    self.subarchives[x.filename] = None
+
     def skipped_tags_report(self):
         """Return a JSON-serialisable dump of the skipped extra-field matrix.
 
@@ -356,6 +484,15 @@ class P4KFile(zipfile.ZipFile):
     def _RealGetContents(self):
         """Read in the table of contents for the ZIP file."""
         fp = self.fp
+        # JiJi v2 packs ("JiJi" magic + 0xAF trailer) take the v2 walk;
+        # everything else uses the tolerant v1 central-directory walk below.
+        trailer = self._peek_jiji_trailer(fp)
+        if trailer is not None:
+            self._pack_version = 2
+            self._read_contents_v2(fp, trailer)
+            self._update_file_tree()
+            return
+        self._pack_version = 1
         try:
             endrec = zipfile._EndRecData(fp)
         except OSError:
@@ -495,6 +632,12 @@ class P4KFile(zipfile.ZipFile):
         if zinfo.subinfo is not None:
             return zinfo.archive.open(zinfo.subinfo, mode=mode, pwd=pwd, force_zip64=force_zip64)
 
+        # JiJi v2 entries address payload bytes directly (no local file
+        # header precedes the data), so the header-skipping logic below
+        # does not apply — open the payload range as-is.
+        if mode == "r" and getattr(zinfo, "_p4k_v2", False):
+            return self._open_v2_entry(zinfo)
+
         if mode == "w":
             return self._open_to_write(zinfo, force_zip64=force_zip64)
 
@@ -554,6 +697,25 @@ class P4KFile(zipfile.ZipFile):
                 zd = _P4KDecrypter(self.key)
 
             return P4KExtFile(zef_file, mode, zinfo, zd, True)
+        except:
+            zef_file.close()
+            raise
+
+    def _open_v2_entry(self, zinfo):
+        """Open a JiJi v2 entry's payload range directly (no local header)."""
+        self._fileRefCnt += 1
+        zef_file = _SharedFile(
+            self.fp,
+            zinfo.header_offset,
+            self._fpclose,
+            self._lock,
+            lambda: self._writing,
+        )
+        try:
+            zd = None
+            if self.key and zinfo.is_encrypted:
+                zd = _P4KDecrypter(self.key)
+            return P4KExtFile(zef_file, "r", zinfo, zd, True)
         except:
             zef_file.close()
             raise

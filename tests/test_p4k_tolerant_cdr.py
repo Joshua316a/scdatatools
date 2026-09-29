@@ -40,30 +40,55 @@ def build_pack(entries, preamble=b""):
 
     entries: list of (filename: str, data: bytes, extra: bytes) where extra
         is the *central-directory* extra field (local extras are empty).
+        All entries use method 0 (stored); see build_pack_methods() for
+        compression-method coverage.
     preamble: when non-empty, reproduces the CIG layout the SC 4.7+ fix
         handles — the same garbage length is prepended before the local
         headers AND inside the central-directory window, while all stored
         offsets exclude it (so the parser must add it back via `concat`).
     Returns the full pack bytes.
     """
+    return build_pack_methods([(fn, data, 0, extra) for fn, data, extra in entries],
+                              preamble=preamble)
+
+
+def build_pack_methods(entries, preamble=b""):
+    """Build a minimal ZIP with per-entry compression methods.
+
+    entries: list of (filename, data, method, extra). method 0 = stored;
+        93 = zstd-deprecated, 100 = zstd, 101 = zlib-wrapped deflate.
+        Payloads are encoded with the real codecs so read-back is a true
+        round-trip. CRCs cover the uncompressed bytes.
+    """
+    import zlib
+
     out = io.BytesIO()
     out.write(preamble)
     central = io.BytesIO()
-    for filename, data, extra in entries:
+    for filename, data, method, extra in entries:
         fn = filename.encode("utf-8")
+        if method == 0:
+            payload = data
+        elif method == 101:
+            payload = zlib.compress(data)
+        elif method in (93, 100):
+            zstandard = pytest.importorskip("zstandard")
+            payload = zstandard.compress(data)
+        else:
+            payload = data  # unknown methods: raw payload, open() must refuse
         # Stored offsets exclude the preamble, like real CIG packs.
         local_offset = out.tell() - len(preamble)
         out.write(struct.pack(
             "<IHHHHHIIIHH",
-            0x04034B50, 20, 0x0800, 0, 0, 0,
-            _crc(data), len(data), len(data), len(fn), 0,
+            0x04034B50, 20, 0x0800, method, 0, 0,
+            _crc(data), len(payload), len(data), len(fn), 0,
         ))
         out.write(fn)
-        out.write(data)
+        out.write(payload)
         central.write(struct.pack(
             "<IHHHHHHIIIHHHHHII",
-            0x02014B50, 63, 20, 0x0800, 0, 0, 0,
-            _crc(data), len(data), len(data), len(fn), len(extra), 0,
+            0x02014B50, 63, 20, 0x0800, method, 0, 0,
+            _crc(data), len(payload), len(data), len(fn), len(extra), 0,
             0, 0, 0, local_offset,
         ))
         central.write(fn)
@@ -201,3 +226,46 @@ def test_decode_extra_never_raises_bad_zip():
                     assert raises == []
                     return
     pytest.fail("P4KInfo._decodeExtra not found")
+
+
+# ── Task 3.2: compression methods registry ───────────────────────────────────
+
+def test_method_101_zlib_deflate_roundtrip(tmp_path):
+    payload = build_pack_methods([("Objects/z.cgf", b"ZLIB-DATA" * 100, 101, b"")])
+    pf = open_pack(tmp_path, payload)
+    assert pf.read("Objects/z.cgf") == b"ZLIB-DATA" * 100
+    pf.close()
+
+
+def test_method_93_zstd_deprecated_roundtrip(tmp_path):
+    payload = build_pack_methods([("Objects/o.cgf", b"ZSTD93-DATA" * 100, 93, b"")])
+    pf = open_pack(tmp_path, payload)
+    assert pf.read("Objects/o.cgf") == b"ZSTD93-DATA" * 100
+    pf.close()
+
+
+def test_method_100_zstd_roundtrip(tmp_path):
+    payload = build_pack_methods([("Objects/n.cgf", b"ZSTD100-DATA" * 100, 100, b"")])
+    pf = open_pack(tmp_path, payload)
+    assert pf.read("Objects/n.cgf") == b"ZSTD100-DATA" * 100
+    pf.close()
+
+
+def test_unknown_method_raises_naming_entry(tmp_path):
+    payload = build_pack_methods([("Objects/mystery.cgf", b"???", 42, b"")])
+    pf = open_pack(tmp_path, payload)
+    with pytest.raises(ValueError, match="mystery.cgf"):
+        pf.read("Objects/mystery.cgf")
+    pf.close()
+
+
+def test_methods_registry_unit():
+    import zlib
+
+    from scdatatools.p4k import decompressor_for_method
+
+    assert isinstance(decompressor_for_method(100, "a")._decomp, object)
+    assert isinstance(decompressor_for_method(93, "a")._decomp, object)
+    assert isinstance(decompressor_for_method(101, "a"), zlib.decompressobj().__class__)
+    with pytest.raises(ValueError, match="entry 'nope.cgf'"):
+        decompressor_for_method(42, "nope.cgf")
