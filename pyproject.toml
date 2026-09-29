@@ -1,6 +1,6 @@
 [project]
 name = "scdatatools"
-version = "1.0.5"
+version = "1.0.6"
 description = "Python tools for working with Star Citizen data files."
 authors = [
     {name = "ventorvar", email = "ventorvar@gmail.com"},

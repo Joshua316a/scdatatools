@@ -22,7 +22,7 @@ def _install_package_stub():
     pkg = types.ModuleType("scdatatools")
     pkg.__path__ = [_SRC_PKG]
     # Mirror the real package init's public names used by library modules.
-    pkg.__version__ = "1.0.5"
+    pkg.__version__ = "1.0.6"
     sys.modules["scdatatools"] = pkg
 
 

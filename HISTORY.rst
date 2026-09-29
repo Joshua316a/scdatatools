@@ -2,6 +2,19 @@
 History
 =======
 
+1.0.6 (2026-09-29)
+------------------
+
+* Workstream 1 ingest restoration: hand-rolled tolerant central-directory
+  walk (unknown extra-field tags are skipped and recorded, never fatal);
+  DCB version dispatch (v5/v6 classic 32-byte records, v8 fixed 36-byte
+  records) with byte-budget assertions and loud refusal of unknown versions;
+  JiJi v2 pack reader; zstd-93/100/zlib-101 method registry; `scdt` CLI
+  rewritten on stdlib argparse (pynubia removed); wheels-only footprint,
+  Python 3.10+.
+* Validated against LIVE Data.p4k (1.37 M files) and Game2.dcb v8
+  (117022 records, oracle field-identical).
+
 1.0.4 (2022-08-02)
 ------------------
 
