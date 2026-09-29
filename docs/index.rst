@@ -8,6 +8,7 @@ Welcome to scdatatools's documentation!
    readme
    installation
    usage
+   version-matrix
    contributing
    developer
    authors
