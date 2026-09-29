@@ -1,0 +1,36 @@
+# Workstream 1 per-patch gate (Phase 4, Task 4.1) — part 1 of 2.
+#
+# This job runs the hermetic fixture suite on every push/PR: hand-built
+# archives/DCBs covering the tolerant CDR walk, DCB version dispatch,
+# byte-budget assertion, JiJi v2 reader, and methods 93/100/101. No game
+# data, no oracle binary, no compiler needed — green on all OSes.
+#
+# Part 2 (NOT yet wired — needs a Windows runner with game data, see
+# GATES.md G7): open the current Data.p4k, parse Game2.dcb, diff the
+# record dump vs. the svarog oracle, and fail the build on divergence.
+
+name: Workstream 1 Gates
+
+on:
+  push:
+    branches: [devel, main]
+  pull_request:
+
+jobs:
+  fixture-gates:
+    name: Fixture gates (no game data)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test dependencies (wheels only)
+        run: pip install --only-binary :all: pytest zstandard pycryptodome xxhash numpy pyquaternion
+      - name: Run Workstream 1 fixture suite
+        run: python -m pytest tests/ -q
