@@ -87,7 +87,18 @@ class DataCoreBinary:
             self.data_mapping_definitions = _read_and_seek(
                 dftypes.DataMappingDefinition16 * self.header.data_mapping_definition_count
             )
-        self.records = _read_and_seek(dftypes.Record * self.header.record_definition_count)
+        # Version-dispatched record walk (Workstream 1, Tasks 1.2/1.3):
+        # resolve the validated struct for this header version FIRST (v8 and
+        # unknown versions refuse loudly here), then prove the table fits
+        # before reading a single record.
+        record_cls = dftypes.record_type_for_version(self.header.version)
+        dftypes.assert_byte_budget(
+            self.header.record_definition_count,
+            ctypes.sizeof(record_cls),
+            len(self.raw_data) - offset,
+            "records",
+        )
+        self.records = _read_and_seek(record_cls * self.header.record_definition_count)
         self.values = {
             DataTypes.Int8: _read_and_seek(ctypes.c_int8 * self.header.int8_count),
             DataTypes.Int16: _read_and_seek(ctypes.c_int16 * self.header.int16_count),

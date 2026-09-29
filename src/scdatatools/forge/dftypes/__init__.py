@@ -431,6 +431,56 @@ class WeakPointer(Pointer, DataCoreBase):
         return {}
 
 
+class DataCoreError(Exception):
+    """Base for loud DCB parse failures (Workstream 1: never silent garbage)."""
+
+
+class DataCoreVersionError(DataCoreError):
+    """Raised for DCB versions without a validated struct map."""
+
+
+class DCBBudgetError(DataCoreError):
+    """Raised when count x stride exceeds the available bytes."""
+
+
+def assert_byte_budget(count, stride, remaining, what):
+    """Assert a table fits in the remaining bytes.
+
+    The exact check that convicts flat/wrong struct maps: violations raise
+    instead of walking off the end of the buffer into plausible garbage.
+    """
+    need = count * stride
+    if need > remaining:
+        raise DCBBudgetError(
+            f"{what}: need {need} bytes ({count} x {stride}) "
+            f"but only {remaining} remain"
+        )
+
+
+# DCB header version -> Record struct name. v5/v6 share the classic 32-byte
+# layout (byte-identical paths). v8's record blob is conditional/tabled, NOT
+# a flat +3912 B/record (117022 records x 3912 B = ~462 MB demanded of a
+# ~332 MB file — arithmetically impossible), and has no validated struct map
+# yet, so it refuses loudly until Phase 2 lands a StarBreaker-diffed layout.
+DCB_RECORD_TYPES = {5: "Record", 6: "Record"}
+
+
+def record_type_for_version(version):
+    """Return the Record struct class for a DCB header version.
+
+    Raises DataCoreVersionError naming the version for anything without a
+    validated map — v8 today, any future version tomorrow.
+    """
+    name = DCB_RECORD_TYPES.get(version)
+    if name is None:
+        raise DataCoreVersionError(
+            f"unsupported DCB version {version}: no validated Record struct map "
+            f"(v8 layout is conditional/tabled — pending Phase 2 "
+            f"StarBreaker-diff validation)"
+        )
+    return globals()[name]
+
+
 class Record(Pointer, DataCoreNamed):
     _fields_ = [
         ("name_offset", ctypes.c_uint32),
@@ -439,9 +489,12 @@ class Record(Pointer, DataCoreNamed):
         ("id", GUID),
         ("instance_index", ctypes.c_uint16),
         ("other_index", ctypes.c_uint16),
-        # SC 4.10.1+ extra field (a4c1, size=3912)
-        ("_a4c1_extra", ctypes.c_uint8 * 3912),
     ]
+
+    # NOTE: no version-specific tail on this struct. The SC 4.10.1+ a4c1 blob
+    # is NOT part of the v5/v6 layout (a flat per-record tail overshoots real
+    # files); v8+ versions are dispatched/refused via
+    # record_type_for_version(), never silently mis-walked.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -160,6 +160,30 @@ class P4KInfo(zipfile.ZipInfo):
     def open(self, *args, **kwargs):
         return self.p4k.open(self, *args, **kwargs)
 
+    def _record_skipped_tag(self, tp, ln, truncated=False):
+        """Record an unknown/skipped extra-field tag for the version matrix.
+
+        Never raises: a read-only pack browser must not fail the whole
+        archive over one unfamiliar tag. Owners without a matrix (e.g.
+        ad-hoc P4KInfo use) simply skip recording.
+        """
+        try:
+            owner = getattr(self, "p4k", None)
+            matrix = getattr(owner, "skipped_extra_tags", None)
+            if matrix is None:
+                return
+            entry = matrix.setdefault(
+                tp, {"count": 0, "lengths": set(), "files": [], "truncated": False}
+            )
+            entry["count"] += 1
+            entry["lengths"].add(ln)
+            if truncated:
+                entry["truncated"] = True
+            if len(entry["files"]) < 5:
+                entry["files"].append(self.filename)
+        except Exception:
+            pass
+
     def _decodeExtra(self):
         # Try to decode the extra field.
         self.is_encrypted = len(self.extra) >= 168 and self.extra[168] > 0x00
@@ -171,6 +195,11 @@ class P4KInfo(zipfile.ZipInfo):
         total = len(self.extra)
         while (offset + 4) < total:
             tp, ln = struct.unpack("<HH", self.extra[offset : offset + 4])
+            if offset + 4 + ln > total:
+                # Truncated tag: record and stop. Tolerant by design —
+                # never fail the pack over a malformed tail.
+                self._record_skipped_tag(tp, ln, truncated=True)
+                break
             if tp == 0x0001:
                 if ln >= 24:
                     counts = struct.unpack("<QQQ", self.extra[offset + 4 : offset + 28])
@@ -187,7 +216,12 @@ class P4KInfo(zipfile.ZipInfo):
                 elif ln == 0:
                     counts = ()
                 else:
-                    raise zipfile.BadZipFile("Corrupt extra field %04x (size=%d)" % (tp, ln))
+                    # Unknown ZIP64 shape (e.g. CIG custom layouts): record
+                    # for the version matrix and keep central-directory sizes
+                    # (best effort) instead of raising BadZipFile.
+                    self._record_skipped_tag(tp, ln)
+                    offset += ln + 4
+                    continue
 
                 idx = 0
                 # ZIP64 extension (large files and/or large archives)
@@ -202,6 +236,10 @@ class P4KInfo(zipfile.ZipInfo):
                 if self.header_offset == 0xFFFFFFFF:
                     self.header_offset = counts[idx]
                     idx += 1
+            else:
+                # Non-ZIP64 tags — including CIG custom CDR tags: skip and
+                # record for the version matrix (Task 1.1).
+                self._record_skipped_tag(tp, ln)
             offset += ln + 4
 
 
@@ -217,6 +255,11 @@ class P4KFile(zipfile.ZipFile):
         self.BaseNameToInfo = {}
         self.subarchives = {}
         self.file_tree = {}
+        # Version matrix (Workstream 1, Task 1.1): unknown/skipped extra-field
+        # tags observed while walking the central directory. Must exist before
+        # super().__init__() because parsing happens inside it.
+        # Shape: {tag_int: {"count": int, "lengths": set[int], "files": [str×≤5]}}
+        self.skipped_extra_tags = {}
 
         if load_monitor is None:
             self._load_monitor = lambda *a, **kw: True
@@ -236,6 +279,22 @@ class P4KFile(zipfile.ZipFile):
             parent = self.file_tree
             for part in path.filename.split("/"):
                 parent = parent.setdefault(part, {})
+
+    def skipped_tags_report(self):
+        """Return a JSON-serialisable dump of the skipped extra-field matrix.
+
+        Used for the pack-format version matrix (Workstream 1, Task 1.1):
+        which unknown tags exist in the wild, at which lengths, in which files.
+        """
+        return {
+            "0x%04x" % tp: {
+                "count": entry["count"],
+                "lengths": sorted(entry["lengths"]),
+                "files": list(entry["files"]),
+                "truncated": entry.get("truncated", False),
+            }
+            for tp, entry in sorted(self.skipped_extra_tags.items())
+        }
 
     def expand_subarchives(self):
         """Ensures all sub-archives have been expanded"""
@@ -294,8 +353,8 @@ class P4KFile(zipfile.ZipFile):
             self.NameToInfoLower[x.filename.casefold()] = x
             self.BaseNameToInfo.setdefault(x.filename.split(".", maxsplit=1)[0].casefold(), []).append(x)
 
-        def _RealGetContents(self):
-            """Read in the table of contents for the ZIP file."""
+    def _RealGetContents(self):
+        """Read in the table of contents for the ZIP file."""
         fp = self.fp
         try:
             endrec = zipfile._EndRecData(fp)
